@@ -35,12 +35,22 @@ PASS: JVM WAV writer test (Wav.java compiled and executed independently):
 PASS: Ordered pending queue, persisted acknowledgements and plain UTF-8
       export logic reviewed after the 0.2 changes.
 PASS: Endpoint contract remains multipart file -> JSON {"text": "..."}.
+PASS: GitHub Actions workflow "Build prototype APK" run 40265717053 completed
+      successfully on 2026-10-26. It installed SDK 35, built with ./gradlew,
+      checksummed the APK and uploaded the artifact.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40265717053
+      CI artifact: 57,165 bytes, SHA-256
+      ac9981ba45cf20cec013a8d8cb8765a491db6a2ae1a7f20936e4ce039d09c084.
+      The CI runner generated its own debug key, so this APK is signed with a
+      different certificate from the local hand-off build above.
 
 Local hand-off APK
   Path      dist/BarkPocket-0.2-debug.apk
   Size      57,513 bytes
   SHA-256   2c5839334f7818f3756d0b1630d3455e415451ff6b6b7712aeaa4a419d6e20a7
   Signature debug, v2 scheme
+  Note      The CI artifact uses a different generated debug key. Installing
+            one build over the other may require uninstalling first.
 
 NOT PERFORMED
   - Installation or launch on a physical phone or emulator.
@@ -48,7 +58,6 @@ NOT PERFORMED
   - Real LAN server request, HTTP error/retry path, token path.
   - Syncthing folder creation, sync and permission-loss recovery.
   - Airplane-mode, call-interruption, process-kill and screen-off tests.
-  - GitHub Actions execution (first run happens after the initial push).
   - Stable release signing.
 
 This artifact is a compiled, debug-signed prototype APK with static/manifest

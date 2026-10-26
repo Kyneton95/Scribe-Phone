@@ -7,6 +7,7 @@ into a folder that Syncthing already syncs.
 
 **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
+**Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40265717053>
 
 ## Delivery status
 
@@ -27,8 +28,10 @@ into a folder that Syncthing already syncs.
   smaller than a Compose app for a first prototype.
 - The APK is **debug-signed**. A build made on a different machine/runner can
   use a different debug key, so a later APK may require uninstalling the old
-  prototype first. Export notes before uninstalling; uninstalling deletes
-  private drafts/audio. A stable release signing key is deferred.
+  prototype first. In particular, the local hand-off APK and the CI artifact
+  are signed with different generated debug keys. Export notes before
+  uninstalling; uninstalling deletes private drafts/audio. A stable release
+  signing key is deferred.
 
 ## What it does
 
