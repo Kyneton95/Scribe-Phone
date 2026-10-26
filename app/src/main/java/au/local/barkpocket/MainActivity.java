@@ -1,104 +1,698 @@
 package au.local.barkpocket;
+
 import android.Manifest;
-import android.app.*;
-import android.content.*;
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.*;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Settings;
 import android.text.InputType;
-import android.view.*;
-import android.widget.*;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
 import java.net.URI;
 
-public class MainActivity extends Activity{
-    private SessionStore store;private android.content.SharedPreferences prefs;
-    private EditText endpoint,token;private TextView status,transcript,folderLabel;private RadioGroup modes;
-    private Button toggle,retry,save,discard,folderButton,apply;
-    private final Handler handler=new Handler(Looper.getMainLooper());private boolean pendingStart;private String lastText="";
-    private final Runnable refresh=new Runnable(){public void run(){render();handler.postDelayed(this,500);}};
-    private int dp(int n){return(int)(getResources().getDisplayMetrics().density*n);}
-    private TextView label(String s,int size){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setPadding(0,dp(8),0,dp(8));return t;}
-    private Button button(LinearLayout l,String s,View.OnClickListener click){Button b=new Button(this);b.setText(s);b.setOnClickListener(click);l.addView(b,new LinearLayout.LayoutParams(-1,-2));return b;}
-    @Override public void onCreate(Bundle state){
-        super.onCreate(state);store=SessionStore.get(this);prefs=getSharedPreferences("settings",MODE_PRIVATE);
-        ScrollView scroll=new ScrollView(this);LinearLayout body=new LinearLayout(this);body.setOrientation(LinearLayout.VERTICAL);body.setPadding(dp(20),dp(16),dp(20),dp(24));scroll.addView(body);setContentView(scroll);
-        body.setOnApplyWindowInsetsListener((v,insets)->{android.graphics.Insets b=insets.getInsets(WindowInsets.Type.systemBars());v.setPadding(dp(20)+b.left,dp(16)+b.top,dp(20)+b.right,dp(24)+b.bottom);return insets;});
-        body.addView(label("Bark Pocket",28));body.addView(label("Your voice → your server → plain text",15));body.addView(label("Choose before starting",16));
-        modes=new RadioGroup(this);RadioButton a=new RadioButton(this);a.setId(R.id.mode_dictate);a.setText("Dictate · copy/share, no automatic file");modes.addView(a);
-        RadioButton b=new RadioButton(this);b.setId(R.id.mode_document);b.setText("Dictate + document · save one .txt file");modes.addView(b);modes.check(R.id.mode_dictate);body.addView(modes);
-        toggle=button(body,"Start listening",v->toggle());status=label("Ready",16);status.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);body.addView(status);
-        transcript=label("Your transcript appears here after each phrase.",18);transcript.setTextIsSelectable(true);body.addView(transcript);
-        button(body,"Copy transcript",v->{synchronized(store){((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("Transcript",store.text));}toast("Copied");});
-        button(body,"Share transcript",v->{String text;synchronized(store){text=store.text;}startActivity(Intent.createChooser(new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT,text),"Share transcript"));});
-        retry=button(body,"Retry pending audio / finish saving",v->{pendingStart=false;permissions();});
-        save=button(body,"Save transcript as .txt",v->save());
-        discard=button(body,"Discard / new session",v->new AlertDialog.Builder(this).setTitle("Discard private session?").setMessage("Deletes this session's private draft and pending audio. Already exported .txt files stay in your chosen folder.").setNegativeButton("Cancel",null).setPositiveButton("Discard",(d,w)->{try{store.discard();render();}catch(Exception e){toast(e.getMessage());}}).show());
-        body.addView(label("Connection and local storage",22));body.addView(label("Full transcription endpoint",14));
-        endpoint=new EditText(this);endpoint.setSingleLine(true);endpoint.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_URI);endpoint.setText(prefs.getString("endpoint","http://192.168.20.14:24100/v1/audio/transcriptions"));body.addView(endpoint);
-        body.addView(label("Optional API bearer token",14));token=new EditText(this);token.setSingleLine(true);token.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);token.setText(prefs.getString("token",""));body.addView(token);
-        apply=button(body,"Save connection settings",v->{try{settings();toast("Settings saved");}catch(Exception e){toast(e.getMessage());}});
-        folderButton=button(body,"Choose local Syncthing folder",v->{Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION|Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);startActivityForResult(i,22);});
-        folderLabel=label("",12);body.addView(folderLabel);
-        body.addView(label("Files contain only the transcript in UTF-8. No Markdown or AI formatting.\n\nTemporary audio and a private recovery draft remain until processed/discarded. No automatic cloud sync. HTTP is unencrypted: trusted LAN only; use HTTPS remotely.\n\nLong-press the app icon for mode shortcuts. The Quick Settings tile opens this screen. Start here, then stop from the recording notification.",14));selectShortcut(getIntent());
+/**
+ * Setup and settings. When everything is configured, launching this activity
+ * immediately summons the floating bubble and gets out of the way.
+ */
+public class MainActivity extends Activity {
+    static final String EXTRA_SETTINGS = "au.local.barkpocket.EXTRA_SETTINGS";
+
+    private static final int REQ_FOLDER = 22;
+    private static final int REQ_PERMISSIONS = 23;
+
+    private static final String DEFAULT_ENDPOINT =
+            "http://192.168.20.14:24100/v1/audio/transcriptions";
+
+    private SharedPreferences prefs;
+    private SessionStore store;
+    private EditText endpoint;
+    private EditText token;
+    private TextView micStatus;
+    private TextView bubbleStatus;
+    private TextView folderStatus;
+    private TextView folderSubtitle;
+    private TextView error;
+    private TextView startButton;
+    private TextView hideButton;
+    private TextView noteLabel;
+    private final TextView[] pausePills = new TextView[3];
+    private static final int[] PAUSE_VALUES = {2000, 4000, 6000};
+    private View content;
+    private boolean settingsMode;
+    private boolean awaitingOverlay;
+    private boolean awaitingFolder;
+    private boolean startWhenReady;
+    private boolean autoStarted;
+
+    @Override public void onCreate(Bundle state) {
+        super.onCreate(state);
+        store = SessionStore.get(this);
+        prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        settingsMode = settingsRequested(getIntent());
+        edgeToEdge();
+        buildUi();
+        updateStatus();
+        if (!settingsMode && isReady()) {
+            autoStarted = true;
+            content.setVisibility(View.INVISIBLE);
+            content.postDelayed(() -> startBubble(true), 220);
+        }
     }
-    @Override protected void onNewIntent(Intent i){super.onNewIntent(i);setIntent(i);selectShortcut(i);}
-    private void selectShortcut(Intent i){String mode=i.getStringExtra("mode");if(mode!=null)modes.check(mode.equals("document")?R.id.mode_document:R.id.mode_dictate);}
-    @Override protected void onResume(){super.onResume();handler.post(refresh);}
-    @Override protected void onPause(){handler.removeCallbacks(refresh);super.onPause();}
-    private void settings()throws Exception{
-        String url=endpoint.getText().toString().trim();URI uri=new URI(url);
-        if(uri.getHost()==null||!("http".equals(uri.getScheme())||"https".equals(uri.getScheme()))||uri.getUserInfo()!=null)throw new Exception("Enter a full HTTP/HTTPS URL without embedded credentials.");
-        prefs.edit().putString("endpoint",url).putString("token",token.getText().toString().trim()).apply();
+
+    @Override protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        settingsMode = settingsRequested(intent);
+        if (content != null) content.setVisibility(View.VISIBLE);
+        updateStatus();
+        if (!settingsMode && isReady() && !autoStarted) {
+            startBubble(true);
+        }
     }
-    private void toggle(){synchronized(store){if(store.active){startService(new Intent(this,VoiceService.class).setAction(VoiceService.STOP));return;}}pendingStart=true;permissions();}
-    private void permissions(){
-        // Retrying pending uploads/saving never touches the microphone, so do not
-        // block it behind a runtime permission the user may have revoked.
-        if(!pendingStart){runService();return;}
-        java.util.ArrayList<String> missing=new java.util.ArrayList<>();
-        if(checkSelfPermission(Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED)missing.add(Manifest.permission.RECORD_AUDIO);
-        if(checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)missing.add(Manifest.permission.POST_NOTIFICATIONS);
-        if(!missing.isEmpty()){requestPermissions(missing.toArray(new String[0]),23);return;}runService();
+
+    @Override protected void onResume() {
+        super.onResume();
+        updateStatus();
+        if (awaitingOverlay) {
+            awaitingOverlay = false;
+            if (Settings.canDrawOverlays(this)) {
+                if (startWhenReady) attemptStart();
+            } else {
+                startWhenReady = false;
+                showError("Floating bubble access is still off.");
+            }
+        }
     }
-    @Override public void onRequestPermissionsResult(int request,String[] p,int[] g){
-        super.onRequestPermissionsResult(request,p,g);
-        if(request!=23)return;
-        if(!pendingStart||checkSelfPermission(Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED)runService();
-        else toast("Microphone permission is required.");
+
+    @Override protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (request != REQ_FOLDER) return;
+        awaitingFolder = false;
+        if (result != RESULT_OK || data == null || data.getData() == null) {
+            startWhenReady = false;
+            return;
+        }
+        try {
+            Uri tree = data.getData();
+            getContentResolver().takePersistableUriPermission(tree,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            prefs.edit().putString("folder", tree.toString()).apply();
+            showError(null);
+            updateStatus();
+            if (startWhenReady) attemptStart();
+        } catch (Exception e) {
+            startWhenReady = false;
+            showError(e.getMessage() == null ? "The folder could not be opened." : e.getMessage());
+        }
     }
-    private void runService(){
-        try{settings();Intent i=new Intent(this,VoiceService.class);
-            if(pendingStart){boolean doc=modes.getCheckedRadioButtonId()==R.id.mode_document;String folder=prefs.getString("folder","");
-                synchronized(store){if(store.exists||store.busy)throw new Exception("Copy/save the previous session, then Discard / new session.");}
-                if(doc&&folder.isEmpty())throw new Exception("Choose your local Syncthing folder first.");
-                i.setAction(VoiceService.START).putExtra("document",doc).putExtra("endpoint",prefs.getString("endpoint","")).putExtra("folder",folder);
-            }else{synchronized(store){if(!store.exists)throw new Exception("No session to retry.");store.endpoint=prefs.getString("endpoint","");store.folder=prefs.getString("folder","");store.persist();}i.setAction(VoiceService.RETRY);}
-            startForegroundService(i);
-        }catch(Exception e){toast(e.getMessage());}
+
+    @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(request, permissions, results);
+        if (request != REQ_PERMISSIONS) return;
+        updateStatus();
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            startWhenReady = false;
+            showError("Microphone permission is needed to dictate.");
+            return;
+        }
+        if (startWhenReady) attemptStart();
     }
-    private void save(){
-        synchronized(store){if(store.active||store.busy||store.pending().length>0){toast("Stop and finish pending transcription before saving.");return;}}
-        new Thread(()->{try{synchronized(store){store.folder=prefs.getString("folder","");store.saveText();}runOnUiThread(()->{toast("Saved plain text");render();});}catch(Exception e){runOnUiThread(()->toast(e.getMessage()));}},"bark-save").start();
+
+    private static boolean settingsRequested(Intent intent) {
+        Bundle extras = intent == null ? null : intent.getExtras();
+        if (extras == null) return false;
+        Object value = extras.get(EXTRA_SETTINGS);
+        if (value instanceof Boolean) return (Boolean) value;
+        return value != null && Boolean.parseBoolean(String.valueOf(value));
     }
-    @Override protected void onActivityResult(int request,int result,Intent data){
-        super.onActivityResult(request,result,data);
-        if(request!=22||result!=RESULT_OK||data==null||data.getData()==null)return;
-        try{
-            Uri uri=data.getData();
-            // The tree picker was opened asking for both; persist both so export keeps working.
-            getContentResolver().takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION|Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-            prefs.edit().putString("folder",uri.toString()).apply();toast("Folder selected");
-        }catch(Exception e){toast(e.getMessage()==null?"Folder permission could not be saved.":e.getMessage());}
+
+    private void edgeToEdge() {
+        Window window = getWindow();
+        window.setStatusBarColor(Color.TRANSPARENT);
+        window.setNavigationBarColor(Color.TRANSPARENT);
+        if (Build.VERSION.SDK_INT >= 30) {
+            window.setDecorFitsSystemWindows(false);
+            window.getInsetsController().setSystemBarsAppearance(0,
+                    android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        }
+        window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     }
-    private void render(){
-        synchronized(store){boolean locked=store.active||store.busy;
-            toggle.setText(store.active?"Stop listening":"Start listening");toggle.setEnabled(store.active||(!store.busy&&!store.exists));
-            retry.setEnabled(store.exists&&!store.busy&&!store.active);discard.setEnabled(store.exists&&!locked);save.setEnabled(store.exists&&!locked&&store.pending().length==0&&!store.text.isBlank()&&store.saved.isEmpty());
-            for(int n=0;n<modes.getChildCount();n++)modes.getChildAt(n).setEnabled(!locked&&!store.exists);
-            endpoint.setEnabled(!locked);token.setEnabled(!locked);apply.setEnabled(!locked);folderButton.setEnabled(!locked);
-            String s=store.status+"\nPending phrases: "+store.pending().length+(store.error.isEmpty()?"":"\n"+store.error);if(!s.contentEquals(status.getText()))status.setText(s);
-            if(!store.text.equals(lastText)){lastText=store.text;transcript.setText(lastText.isBlank()?"Your transcript appears here after each phrase.":lastText);}
-        }folderLabel.setText("Save folder: "+prefs.getString("folder","Not selected"));
+
+    private void buildUi() {
+        FrameLayout root = new FrameLayout(this);
+        root.addView(new AuroraView(this),
+                new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
+                        FrameLayout.LayoutParams.MATCH_PARENT));
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setClipToPadding(false);
+        scroll.setVerticalScrollBarEnabled(false);
+        root.addView(scroll, new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        int pad = Ui.dp(this, 22);
+        body.setPadding(pad, Ui.dp(this, 24), pad, Ui.dp(this, 28));
+        scroll.addView(body, new ScrollView.LayoutParams(
+                ScrollView.LayoutParams.MATCH_PARENT, ScrollView.LayoutParams.WRAP_CONTENT));
+        body.setOnApplyWindowInsetsListener((v, insets) -> {
+            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
+            v.setPadding(pad + bars.left, Ui.dp(this, 24) + bars.top,
+                    pad + bars.right, Ui.dp(this, 28) + bars.bottom);
+            return insets;
+        });
+        content = body;
+        setContentView(root);
+
+        body.addView(brand());
+
+        TextView description = Ui.text(this,
+                "One floating button for your voice. Pause while you think, then add the finished draft to a single note for today.",
+                14, Ui.TEXT, false);
+        description.setLineSpacing(Ui.dp(this, 4), 1.12f);
+        LinearLayout.LayoutParams descriptionLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        descriptionLp.topMargin = Ui.dp(this, 18);
+        body.addView(description, descriptionLp);
+
+        TextView eyebrow = Ui.text(this, "SETUP", 10.5f, Ui.MUTED, true);
+        eyebrow.setLetterSpacing(0.16f);
+        LinearLayout.LayoutParams eyebrowLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        eyebrowLp.topMargin = Ui.dp(this, 28);
+        body.addView(eyebrow, eyebrowLp);
+
+        LinearLayout accessCard = card();
+        body.addView(accessCard, cardLp());
+        accessCard.addView(accessRow(R.drawable.ic_mic, "Microphone",
+                "Used only while dictating", 0), rowLp());
+        accessCard.addView(divider(), dividerLp());
+        accessCard.addView(accessRow(R.drawable.ic_sparkle, "Floating bubble",
+                "Display over other apps", 1), rowLp());
+        accessCard.addView(divider(), dividerLp());
+        accessCard.addView(accessRow(R.drawable.ic_folder, "Daily notes",
+                "Where your note file lives", 2), rowLp());
+
+        TextView dictationEyebrow = Ui.text(this, "DICTATION", 10.5f, Ui.MUTED, true);
+        dictationEyebrow.setLetterSpacing(0.16f);
+        LinearLayout.LayoutParams dictationLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        dictationLp.topMargin = Ui.dp(this, 20);
+        body.addView(dictationEyebrow, dictationLp);
+
+        LinearLayout pauseCard = card();
+        body.addView(pauseCard, cardLp());
+        pauseCard.addView(Ui.text(this, "Pause before transcribing", 14, Ui.TEXT, true));
+        TextView pauseHint = Ui.text(this,
+                "Longer gives you room to think. Tap Stop to send immediately.",
+                11, Ui.MUTED, false);
+        pauseHint.setLineSpacing(Ui.dp(this, 2), 1.08f);
+        LinearLayout.LayoutParams pauseHintLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        pauseHintLp.topMargin = Ui.dp(this, 2);
+        pauseCard.addView(pauseHint, pauseHintLp);
+
+        LinearLayout pauseRow = new LinearLayout(this);
+        pauseRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams pauseRowLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        pauseRowLp.topMargin = Ui.dp(this, 10);
+        pauseCard.addView(pauseRow, pauseRowLp);
+        String[] labels = {"Quick · 2 s", "Natural · 4 s", "Relaxed · 6 s"};
+        for (int i = 0; i < labels.length; i++) {
+            final int value = PAUSE_VALUES[i];
+            TextView pill = new TextView(this);
+            pill.setText(labels[i]);
+            pill.setTextSize(11.5f);
+            pill.setGravity(Gravity.CENTER);
+            pill.setPadding(Ui.dp(this, 4), Ui.dp(this, 9),
+                    Ui.dp(this, 4), Ui.dp(this, 9));
+            pill.setOnClickListener(v -> {
+                prefs.edit().putInt("pause_ms", value).apply();
+                Ui.haptic(v);
+                updatePausePills();
+            });
+            Ui.touchAnimation(pill);
+            LinearLayout.LayoutParams pillLp = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            if (i > 0) pillLp.leftMargin = Ui.dp(this, 6);
+            pauseRow.addView(pill, pillLp);
+            pausePills[i] = pill;
+        }
+
+        TextView serverEyebrow = Ui.text(this, "SERVER", 10.5f, Ui.MUTED, true);
+        serverEyebrow.setLetterSpacing(0.16f);
+        LinearLayout.LayoutParams serverLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        serverLp.topMargin = Ui.dp(this, 20);
+        body.addView(serverEyebrow, serverLp);
+
+        LinearLayout serverCard = card();
+        body.addView(serverCard, cardLp());
+        serverCard.addView(Ui.text(this, "Transcription endpoint", 12, Ui.MUTED, false));
+        endpoint = input(false);
+        endpoint.setText(prefs.getString("endpoint", DEFAULT_ENDPOINT));
+        LinearLayout.LayoutParams endpointLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        endpointLp.topMargin = Ui.dp(this, 7);
+        serverCard.addView(endpoint, endpointLp);
+
+        TextView tokenLabel = Ui.text(this, "Optional bearer token", 12, Ui.MUTED, false);
+        LinearLayout.LayoutParams tokenLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        tokenLp.topMargin = Ui.dp(this, 12);
+        serverCard.addView(tokenLabel, tokenLp);
+        token = input(true);
+        token.setText(prefs.getString("token", ""));
+        LinearLayout.LayoutParams tokenInputLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        tokenInputLp.topMargin = Ui.dp(this, 7);
+        serverCard.addView(token, tokenInputLp);
+
+        TextView contract = Ui.text(this,
+                "Posts one phrase as multipart WAV and expects {\"text\":\"…\"}. HTTP is unencrypted — trusted LAN only.",
+                10.5f, Ui.MUTED, false);
+        contract.setLineSpacing(Ui.dp(this, 2), 1.08f);
+        LinearLayout.LayoutParams contractLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        contractLp.topMargin = Ui.dp(this, 10);
+        serverCard.addView(contract, contractLp);
+
+        error = Ui.text(this, "", 12, Ui.DANGER, false);
+        error.setVisibility(View.GONE);
+        LinearLayout.LayoutParams errorLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        errorLp.topMargin = Ui.dp(this, 10);
+        body.addView(error, errorLp);
+
+        startButton = new TextView(this);
+        startButton.setText("Start floating bubble");
+        startButton.setTextSize(15.5f);
+        startButton.setTextColor(0xFF06111A);
+        startButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        startButton.setGravity(Gravity.CENTER);
+        startButton.setBackground(Ui.gradient(Ui.MINT, Ui.BLUE, 28, this));
+        startButton.setCompoundDrawablePadding(Ui.dp(this, 8));
+        Drawable spark = getDrawable(R.drawable.ic_sparkle);
+        spark.setTint(0xFF06111A);
+        spark.setBounds(0, 0, Ui.dp(this, 16), Ui.dp(this, 16));
+        startButton.setCompoundDrawables(spark, null, null, null);
+        startButton.setOnClickListener(v -> {
+            startWhenReady = true;
+            Ui.haptic(v);
+            attemptStart();
+        });
+        Ui.touchAnimation(startButton);
+        LinearLayout.LayoutParams startLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 58));
+        startLp.topMargin = Ui.dp(this, 18);
+        body.addView(startButton, startLp);
+
+        hideButton = Ui.text(this, "Hide floating bubble", 12.5f, Ui.MUTED, true);
+        hideButton.setGravity(Gravity.CENTER);
+        hideButton.setPadding(0, Ui.dp(this, 14), 0, Ui.dp(this, 14));
+        hideButton.setOnClickListener(v -> {
+            startService(new Intent(this, BubbleService.class)
+                    .setAction(BubbleService.ACTION_HIDE));
+            hideButton.postDelayed(this::updateStatus, 250);
+        });
+        body.addView(hideButton);
+
+        noteLabel = Ui.text(this, "", 11, Ui.MUTED, false);
+        noteLabel.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams noteLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        noteLp.topMargin = Ui.dp(this, 10);
+        body.addView(noteLabel, noteLp);
+
+        TextView privacy = Ui.text(this,
+                "Drafts and audio stay private on this phone. Only the selected phrase is sent to your server. No cloud sync or analytics.",
+                11, Ui.MUTED, false);
+        privacy.setGravity(Gravity.CENTER);
+        privacy.setLineSpacing(Ui.dp(this, 2), 1.1f);
+        LinearLayout.LayoutParams privacyLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        privacyLp.topMargin = Ui.dp(this, 10);
+        body.addView(privacy, privacyLp);
+
+        TextView github = Ui.text(this, "View source on GitHub", 11.5f, Ui.BLUE, true);
+        github.setGravity(Gravity.CENTER);
+        github.setPadding(0, Ui.dp(this, 16), 0, Ui.dp(this, 4));
+        github.setOnClickListener(v -> openGitHub());
+        body.addView(github);
     }
-    private void toast(String text){Toast.makeText(this,text==null?"Unknown error":text,Toast.LENGTH_LONG).show();}
+
+    private LinearLayout brand() {
+        LinearLayout brand = new LinearLayout(this);
+        brand.setOrientation(LinearLayout.HORIZONTAL);
+        brand.setGravity(Gravity.CENTER_VERTICAL);
+
+        FrameLayout mark = new FrameLayout(this);
+        mark.setBackground(shapeCircle(Ui.gradient(Ui.VIOLET, Ui.BLUE, 23, this)));
+        ImageView sparkle = new ImageView(this);
+        sparkle.setImageResource(R.drawable.ic_sparkle);
+        sparkle.setColorFilter(Color.WHITE);
+        mark.addView(sparkle, new FrameLayout.LayoutParams(
+                Ui.dp(this, 24), Ui.dp(this, 24), Gravity.CENTER));
+        brand.addView(mark, new LinearLayout.LayoutParams(Ui.dp(this, 46), Ui.dp(this, 46)));
+
+        LinearLayout words = new LinearLayout(this);
+        words.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams wordsLp = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        wordsLp.leftMargin = Ui.dp(this, 13);
+        brand.addView(words, wordsLp);
+
+        TextView title = Ui.text(this, "Scribe", 31, Ui.TEXT, false);
+        title.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+        title.setLetterSpacing(-0.01f);
+        words.addView(title);
+        TextView tagline = Ui.text(this, "A thought, captured.", 13, Ui.MUTED, false);
+        words.addView(tagline);
+
+        return brand;
+    }
+
+    private LinearLayout accessRow(int iconRes, String title, String subtitle, int which) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(Ui.dp(this, 4), Ui.dp(this, 8), Ui.dp(this, 4), Ui.dp(this, 8));
+
+        FrameLayout badge = new FrameLayout(this);
+        badge.setBackground(shapeCircle(Ui.rounded(0x16FFFFFF, 18, this)));
+        ImageView icon = new ImageView(this);
+        icon.setImageResource(iconRes);
+        icon.setColorFilter(Ui.MUTED);
+        badge.addView(icon, new FrameLayout.LayoutParams(
+                Ui.dp(this, 18), Ui.dp(this, 18), Gravity.CENTER));
+        row.addView(badge, new LinearLayout.LayoutParams(Ui.dp(this, 36), Ui.dp(this, 36)));
+
+        LinearLayout text = new LinearLayout(this);
+        text.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        textLp.leftMargin = Ui.dp(this, 11);
+        row.addView(text, textLp);
+        text.addView(Ui.text(this, title, 14, Ui.TEXT, true));
+        TextView sub = Ui.text(this, subtitle, 11.5f, Ui.MUTED, false);
+        text.addView(sub);
+
+        TextView status = Ui.text(this, "", 11, Ui.MUTED, true);
+        status.setPadding(Ui.dp(this, 10), Ui.dp(this, 5), Ui.dp(this, 10), Ui.dp(this, 5));
+        row.addView(status);
+
+        if (which == 0) {
+            micStatus = status;
+            row.setOnClickListener(v -> {
+                startWhenReady = false;
+                requestMic();
+            });
+        } else if (which == 1) {
+            bubbleStatus = status;
+            row.setOnClickListener(v -> {
+                startWhenReady = false;
+                requestOverlay();
+            });
+        } else {
+            folderStatus = status;
+            folderSubtitle = sub;
+            row.setOnClickListener(v -> {
+                startWhenReady = false;
+                chooseFolder();
+            });
+        }
+        Ui.touchAnimation(row);
+        // The row is added to the card below; return a wrapper containing it.
+        LinearLayout wrapper = new LinearLayout(this);
+        wrapper.addView(row, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        return wrapper;
+    }
+
+    private LinearLayout card() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(Ui.dp(this, 13), Ui.dp(this, 10),
+                Ui.dp(this, 13), Ui.dp(this, 10));
+        card.setBackground(Ui.outline(0xC8141826, 0x1FFFFFFF, 24, this));
+        return card;
+    }
+
+    private LinearLayout.LayoutParams cardLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = Ui.dp(this, 9);
+        return lp;
+    }
+
+    private LinearLayout.LayoutParams rowLp() {
+        return new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    }
+
+    private View divider() {
+        View v = new View(this);
+        v.setBackgroundColor(0x12FFFFFF);
+        return v;
+    }
+
+    private LinearLayout.LayoutParams dividerLp() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, Ui.dp(this, 1));
+        lp.leftMargin = Ui.dp(this, 47);
+        return lp;
+    }
+
+    private EditText input(boolean password) {
+        EditText edit = new EditText(this);
+        edit.setSingleLine(true);
+        edit.setTextSize(13.5f);
+        edit.setTextColor(Ui.TEXT);
+        edit.setHintTextColor(Ui.MUTED);
+        edit.setPadding(Ui.dp(this, 13), Ui.dp(this, 11),
+                Ui.dp(this, 13), Ui.dp(this, 11));
+        edit.setBackground(Ui.outline(0x12FFFFFF, 0x1FFFFFFF, 14, this));
+        edit.setInputType(password
+                ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
+                : InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        edit.setHint(password ? "Bearer token (optional)" : "http://server:port/v1/audio/transcriptions");
+        return edit;
+    }
+
+    private void requestMic() {
+        java.util.ArrayList<String> missing = new java.util.ArrayList<>();
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.RECORD_AUDIO);
+        }
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            missing.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+        if (!missing.isEmpty()) {
+            requestPermissions(missing.toArray(new String[0]), REQ_PERMISSIONS);
+        } else {
+            updateStatus();
+        }
+    }
+
+    private void requestOverlay() {
+        awaitingOverlay = true;
+        try {
+            startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getPackageName())));
+        } catch (Exception e) {
+            awaitingOverlay = false;
+            try {
+                startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION));
+            } catch (Exception e2) {
+                showError("Open Settings → Apps → Special access → Display over other apps.");
+            }
+        }
+    }
+
+    private void chooseFolder() {
+        if (!awaitingFolder) awaitingFolder = true;
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        try {
+            startActivityForResult(intent, REQ_FOLDER);
+        } catch (Exception e) {
+            awaitingFolder = false;
+            startWhenReady = false;
+            showError("The system folder picker could not be opened.");
+        }
+    }
+
+    private void attemptStart() {
+        String url = endpoint.getText().toString().trim();
+        try {
+            URI uri = new URI(url);
+            if (uri.getHost() == null
+                    || !( "http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
+                    || uri.getUserInfo() != null) {
+                throw new IllegalArgumentException();
+            }
+            prefs.edit().putString("endpoint", url)
+                    .putString("token", token.getText().toString().trim()).apply();
+        } catch (Exception e) {
+            startWhenReady = false;
+            showError("Enter a full HTTP/HTTPS transcription URL.");
+            return;
+        }
+        showError(null);
+
+        if (prefs.getString("folder", "").isEmpty()) {
+            if (!awaitingFolder) {
+                showError("Choose where your daily note should live.");
+                chooseFolder();
+            }
+            return;
+        }
+        if (checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestMic();
+            return;
+        }
+        if (!Settings.canDrawOverlays(this)) {
+            if (!awaitingOverlay) requestOverlay();
+            return;
+        }
+        startWhenReady = false;
+        startBubble(!settingsMode);
+    }
+
+    private void startBubble(boolean openPanel) {
+        autoStarted = true;
+        try {
+            boolean running = BubbleService.isRunning();
+            Intent intent = new Intent(this, BubbleService.class)
+                    .setAction(running
+                            ? (openPanel ? BubbleService.ACTION_SHOW_PANEL : BubbleService.ACTION_SHOW)
+                            : BubbleService.ACTION_SHOW);
+            startForegroundService(intent);
+            // Do not remove the visible task until the service has actually entered
+            // the foreground and attached the overlay; Android ties microphone FGS
+            // eligibility to the visible activity.
+            awaitBubbleStart(System.currentTimeMillis() + 2200L);
+        } catch (Exception e) {
+            autoStarted = false;
+            if (content != null) content.setVisibility(View.VISIBLE);
+            showError(e.getMessage() == null ? "Could not start the bubble." : e.getMessage());
+        }
+    }
+
+    private void awaitBubbleStart(long deadline) {
+        content.postDelayed(() -> {
+            if (BubbleService.isReady()) {
+                finishAndRemoveTask();
+            } else if (System.currentTimeMillis() >= deadline) {
+                autoStarted = false;
+                content.setVisibility(View.VISIBLE);
+                showError("The floating bubble could not start. Check the permissions.");
+            } else {
+                awaitBubbleStart(deadline);
+            }
+        }, 50);
+    }
+
+    private boolean isReady() {
+        return !prefs.getString("folder", "").isEmpty()
+                && !prefs.getString("endpoint", "").isEmpty()
+                && checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED
+                && Settings.canDrawOverlays(this);
+    }
+
+    private void updateStatus() {
+        if (micStatus == null) return;
+        boolean mic = checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED;
+        boolean overlay = Settings.canDrawOverlays(this);
+        String folder = prefs.getString("folder", "");
+        setPill(micStatus, mic ? "Ready" : "Allow", mic);
+        setPill(bubbleStatus, overlay ? "On" : "Allow", overlay);
+        setPill(folderStatus, folder.isEmpty() ? "Choose" : "Set", !folder.isEmpty());
+        if (folderSubtitle != null) {
+            folderSubtitle.setText(folder.isEmpty()
+                    ? "Where your note file lives"
+                    : DailyNotes.folderLabel(this, folder));
+        }
+        boolean running = BubbleService.isRunning();
+        startButton.setText(running ? "Save and return to bubble" : "Start floating bubble");
+        hideButton.setVisibility(running ? View.VISIBLE : View.GONE);
+        noteLabel.setText("Today’s note · " + DailyNotes.fileName());
+        updatePausePills();
+    }
+
+    private void updatePausePills() {
+        int selected = prefs.getInt("pause_ms", 4000);
+        for (int i = 0; i < pausePills.length; i++) {
+            TextView pill = pausePills[i];
+            if (pill == null) continue;
+            boolean on = PAUSE_VALUES[i] == selected;
+            pill.setTextColor(on ? 0xFF06111A : Ui.MUTED);
+            pill.setBackground(on
+                    ? Ui.gradient(Ui.MINT, Ui.BLUE, 14, this)
+                    : Ui.rounded(0x12FFFFFF, 14, this));
+            pill.setTypeface(Typeface.create(on ? "sans-serif-medium" : "sans-serif",
+                    Typeface.NORMAL));
+        }
+    }
+
+    private void setPill(TextView view, String text, boolean ok) {
+        view.setText(text);
+        view.setTextColor(ok ? Ui.MINT : Ui.PEACH);
+        view.setBackground(Ui.rounded(ok ? Ui.alpha(Ui.MINT, 26) : Ui.alpha(Ui.PEACH, 26),
+                10, this));
+    }
+
+    private void showError(String message) {
+        if (error == null) return;
+        if (message == null || message.isEmpty()) {
+            error.setVisibility(View.GONE);
+        } else {
+            error.setText(message);
+            error.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void openGitHub() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW,
+                    Uri.parse(getString(R.string.github_url))));
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static android.graphics.drawable.GradientDrawable shapeCircle(
+            android.graphics.drawable.GradientDrawable gradient) {
+        gradient.setShape(android.graphics.drawable.GradientDrawable.OVAL);
+        return gradient;
+    }
 }

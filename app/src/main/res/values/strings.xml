@@ -1,5 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Bark Pocket</string>
-    <string name="shortcut_dictate">Dictate</string>
-    <string name="shortcut_document">Dictate + save</string>
+    <string name="app_name">Scribe</string>
+    <string name="tile_label">Scribe bubble</string>
+    <string name="github_url">https://github.com/Kyneton95/Scribe-Phone</string>
+    <string name="shortcut_bubble">Open Scribe bubble</string>
+    <string name="shortcut_bubble_long">Show the floating dictation bubble</string>
+    <string name="shortcut_settings">Scribe settings</string>
+    <string name="shortcut_settings_long">Open setup, permissions and server settings</string>
 </resources>

@@ -31,13 +31,13 @@ jobs:
           yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
           "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
-      - name: Build debug APK
-        run: ./gradlew --no-daemon --console=plain :app:assembleDebug
+      - name: Build and lint debug APK
+        run: ./gradlew --no-daemon --console=plain :app:assembleDebug :app:lintDebug
       - name: Checksum APK
         run: sha256sum app/build/outputs/apk/debug/app-debug.apk > app/build/outputs/apk/debug/app-debug.apk.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: BarkPocket-debug-apk
+          name: Scribe-debug-apk
           if-no-files-found: error
           retention-days: 14
           path: |

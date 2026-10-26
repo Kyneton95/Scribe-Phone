@@ -1,4 +1,4 @@
-VALIDATION - Bark Pocket prototype 0.2
+VALIDATION - Scribe floating dictation 0.3
 Date: 2026-10-26 (Australia/Melbourne)
 
 Environment
@@ -10,56 +10,73 @@ Environment
   minSdk       34 (Android 14)
   targetSdk    35
   Package      au.local.barkpocket
-  Version      0.2-prototype (versionCode 2)
+  Label        Scribe
+  Version      0.3-floating (versionCode 3)
 
-PASS: ./gradlew :app:assembleDebug completed with BUILD SUCCESSFUL.
-PASS: ./gradlew :app:lintDebug completed with 0 errors, 5 warnings.
-      Warnings: mipmap-anydpi-v26 folder qualifier and hardcoded UI text;
-      none of them is a build or runtime blocker.
+PASS: ./gradlew :app:assembleDebug BUILD SUCCESSFUL.
+PASS: ./gradlew :app:lintDebug 0 errors, 33 warnings.
+      Warnings are draw-time allocations, hardcoded UI strings, unused
+      colour resources, the required v26 adaptive-icon folder, a long vector
+      path and a programmatic custom-view constructor. No warning is a
+      permission, manifest, foreground-service or API-level failure.
 PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (57,513 bytes).
+      (240,629 bytes).
 PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
       CN=Android Debug, SHA-256
       6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
       This is the local debug key, not a stable release key.
 PASS: unzip -t: no compressed-data errors.
-PASS: aapt2 badging: label "Bark Pocket", versionCode 2,
-      versionName 0.2-prototype, minSdk 34, targetSdk 35, adaptive launcher
-      icon present, expected permissions present.
-PASS: Manifest dump: foregroundServiceType = microphone|dataSync
-      (0x81), allowBackup=false, dataExtractionRules present,
-      usesCleartextTraffic=true (documented LAN-only risk).
-PASS: JVM WAV writer test (Wav.java compiled and executed independently):
-      mono, signed 16-bit PCM, 16,000 Hz, exactly 16,000 frames = 1.000 s,
-      RIFF size field 32,036, file size 32,044 bytes.
-PASS: Ordered pending queue, persisted acknowledgements and plain UTF-8
-      export logic reviewed after the 0.2 changes.
-PASS: Endpoint contract remains multipart file -> JSON {"text": "..."}.
-PASS: GitHub Actions workflow "Build prototype APK" run 40265717053 completed
-      successfully on 2026-10-26. It installed SDK 35, built with ./gradlew,
-      checksummed the APK and uploaded the artifact.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40265717053
-      CI artifact: 57,165 bytes, SHA-256
-      ac9981ba45cf20cec013a8d8cb8765a491db6a2ae1a7f20936e4ce039d09c084.
-      The CI runner generated its own debug key, so this APK is signed with a
-      different certificate from the local hand-off build above.
+PASS: aapt2 badging: label "Scribe", versionCode 3, versionName
+      0.3-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
+      Permissions: INTERNET, RECORD_AUDIO, POST_NOTIFICATIONS,
+      FOREGROUND_SERVICE, FOREGROUND_SERVICE_MICROPHONE, WAKE_LOCK,
+      SYSTEM_ALERT_WINDOW.
+PASS: aapt2 manifest dump: BubbleService declared with
+      foregroundServiceType=microphone (0x80); MainActivity singleTask
+      launcher with shortcuts; DraftEditActivity exported=false; VoiceTile
+      bound by BIND_QUICK_SETTINGS_TILE; allowBackup=false;
+      dataExtractionRules present; usesCleartextTraffic=true.
+PASS: Transcript join test (12 cases) on the JVM:
+      - "I was thinking." + "about the plan." -> "I was thinking about the plan."
+      - "I was thinking." + "And then we left." -> "I was thinking, and then we left."
+      - "That is done." + "Next, open the file." -> kept the full stop.
+      - "This is" + "fine." -> "This is fine."
+      - empty + "Hello." -> "Hello."
+      - "One," + "two." -> "One, two."
+      - "Really?" + "and then?" -> "Really, and then?"
+      - "So that is it." + "But why?" -> "So that is it, but why?"
+      - "I think." + "I know." -> kept the full stop.
+      - lowercase continuation, trailing punctuation and repeated separators.
+PASS: DailyNotes payload test (6 cases) on the JVM:
+      - filename Scribe_2026-10-26.txt
+      - first commit writes "Hello world.\n"
+      - later commit gets exactly one blank-line separator for no newline,
+        one trailing newline or an existing blank line.
+      - whitespace is normalised.
+PASS: Code review of the foreground-service start path: MainActivity only
+      starts the microphone service after RECORD_AUDIO, overlay permission,
+      endpoint and folder are present; all service UI mutations are marshalled
+      to the main thread; pending uploads are re-kicked if a phrase lands while
+      the upload loop is releasing; onDestroy resets active/busy flags.
 
 Local hand-off APK
-  Path      dist/BarkPocket-0.2-debug.apk
-  Size      57,513 bytes
-  SHA-256   2c5839334f7818f3756d0b1630d3455e415451ff6b6b7712aeaa4a419d6e20a7
+  Path      dist/Scribe-0.3-debug.apk
+  Size      240,629 bytes
+  SHA-256   9417900fcd8bea0744ae24baaa5344b5b0577daa0387b69136045b889eae0592
   Signature debug, v2 scheme
-  Note      The CI artifact uses a different generated debug key. Installing
-            one build over the other may require uninstalling first.
 
 NOT PERFORMED
-  - Installation or launch on a physical phone or emulator.
-  - S24 microphone, notification, lock-screen, battery and rotation behaviour.
-  - Real LAN server request, HTTP error/retry path, token path.
-  - Syncthing folder creation, sync and permission-loss recovery.
-  - Airplane-mode, call-interruption, process-kill and screen-off tests.
+  - Installation or launch on a physical phone or emulator (no device attached;
+    no /dev/kvm for an accelerated emulator).
+  - Floating-overlay permission flow, bubble drag/snap and panel touch/focus.
+  - Microphone foreground service on a real Samsung/One UI build.
+  - System notification actions, lock screen and screen-off recording.
+  - Real LAN request, server errors/retry, token path and 30 s server latency.
+  - SAF daily-file append against the actual Syncthing folder/provider.
+  - Overlay revocation, folder permission loss, calls, rotation and process kill.
+  - GitHub Actions execution of the 0.3 workflow (first run after push).
   - Stable release signing.
 
-This artifact is a compiled, debug-signed prototype APK with static/manifest
-verification and a native build. Device and end-to-end server tests are still
-required; see README.md for the checklist and known limitations.
+This is a compiled, linted, debug-signed prototype with static/manifest and
+host-side logic verification. Device and end-to-end server tests are required
+before relying on it; see README.md for the checklist.

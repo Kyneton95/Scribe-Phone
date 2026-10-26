@@ -1,148 +1,115 @@
-# Bark Pocket — Android prototype 0.2
+# Scribe — floating dictation for Android
 
-A small Android phone client for a self-hosted transcription server. It records
-short phrases, posts each phrase as a WAV file to your existing HTTP endpoint,
-appends the returned text in order, and can export one plain UTF-8 `.txt` file
-into a folder that Syncthing already syncs.
+A private, self-hosted dictation bubble. Scribe lives as a small floating orb
+over your other apps. Tap it to open a chat-style card, speak, pause while you
+think, then add the finished draft to **one note per day** in a Syncthing folder.
 
-**Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
-**Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-**Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40265717053>
+- **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
+- **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
+- **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
+
+> The visible app is now called **Scribe**. The package remains
+> `au.local.barkpocket` so a 0.3 build can update a 0.2 install. The old
+> Dictate/Dictate + document modes and per-session text files are gone.
 
 ## Delivery status
 
-- Compiled successfully with JDK 17.0.21, Gradle 8.9, Android Gradle Plugin
-  8.7.3, Android SDK 35 and Build Tools 35.0.0.
-- The debug APK is `app/build/outputs/apk/debug/app-debug.apk`; a hand-off copy
-  and checksum are in `dist/` and in the GitHub pre-release.
-  Local hand-off build: **57,513 bytes**, SHA-256
-  `2c5839334f7818f3756d0b1630d3455e415451ff6b6b7712aeaa4a419d6e20a7`.
-- APK integrity and metadata were checked with `apksigner`, `aapt2` and
-  `unzip -t`; Android lint reports **0 errors** (5 warnings). See
-  [VALIDATION.txt](VALIDATION.txt).
-- **Not device-tested.** S24 microphone/notification/lock-screen behaviour, the
-  real LAN server, and Syncthing sync still need a physical device test.
-- Requires **Android 14+** (minSdk 34, targetSdk 35). The Samsung S24 is the
-  intended test device.
-- Java + native Android widgets, no third-party runtime libraries. Deliberately
-  smaller than a Compose app for a first prototype.
-- The APK is **debug-signed**. A build made on a different machine/runner can
-  use a different debug key, so a later APK may require uninstalling the old
-  prototype first. In particular, the local hand-off APK and the CI artifact
-  are signed with different generated debug keys. Export notes before
-  uninstalling; uninstalling deletes private drafts/audio. A stable release
-  signing key is deferred.
+- Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
+  35 and Build Tools 35.0.0** (pinned).
+- **APK:** `dist/Scribe-0.3-debug.apk` — **240,629 bytes**
+- **SHA-256:**
+  `9417900fcd8bea0744ae24baaa5344b5b0577daa0387b69136045b889eae0592`
+- Android lint: **0 errors** (33 warnings, mostly draw-time allocations and
+  hardcoded localization strings).
+- APK integrity, manifest components and signature were checked with
+  `apksigner`, `aapt2` and `unzip -t`; see [VALIDATION.txt](VALIDATION.txt).
+- **Not device-tested.** The floating overlay, microphone foreground service,
+  notification, lock-screen, real server and Syncthing sync still need testing
+  on the S24. No phone or KVM-capable emulator was available here.
+- Debug-signed only. A later build from another machine/runner can use a
+  different debug key; switching builds may require uninstalling first.
 
-## What it does
+## Install
 
-- Choose **Dictate** or **Dictate + document** before starting.
-- Tap **Start listening**, then **Stop listening**; Stop also appears in the
-  notification.
-- Captures mono 16 kHz PCM continuously while the foreground service runs.
-- Sends phrases after ~700 ms of quiet, or at a ~13-second hard cap.
-- Appends results in order, using your **existing** transcription server.
-- Copy/share text; document mode saves **one** UTF-8 `.txt` after Stop and the
-  queue drains.
-- No Markdown, AI model, headers, metadata or formatting in the exported file.
-- Choose a local folder already synced by Syncthing. The app does not run sync.
-- Private session recovery, ordered pending WAV queue, explicit retry.
-- Launcher mode shortcuts; Quick Settings tile opens the mode chooser.
-- No account, analytics, advertising, external AI provider or built-in cloud
-  sync.
+1. Copy `Scribe-0.3-debug.apk` to the phone and open it.
+2. Allow installation from your file manager if prompted.
+3. Open **Scribe** once and complete the short setup:
+   - **Microphone** — used only while dictating.
+   - **Floating bubble** — the system *Display over other apps* permission.
+   - **Daily notes** — pick the local folder Syncthing already syncs.
+   - **Server** — the full transcription URL, plus an optional bearer token.
+4. Tap **Start floating bubble**. The setup screen closes and the orb appears
+   over the home screen/other apps.
+5. Tap the orb for the chat card. Tap the big mic button, speak, pause, then
+   **Add to today’s note**. The orb’s dot means a draft is waiting.
 
-## Get an APK
+Long-press the orb to start or stop dictation without opening the card. Drag it
+to move it; it snaps to the nearest side. The notification also has Stop / Add
+to note / Hide actions. A **Scribe settings** launcher shortcut is available
+from the app icon long-press menu.
 
-### Option A — prebuilt APK from the GitHub pre-release
+## How the dictation flow works
 
-Download the APK from
-<https://github.com/Kyneton95/Scribe-Phone/releases> (the repository is
-private, so sign in to GitHub first). Copy it to the phone, open it, and allow
-installation from the file manager if prompted. A SHA-256 checksum is attached
-to the release.
+- Only voice dictation and commit remain; there are no modes to choose.
+- A phrase ends after a **configurable pause** — 2 s, 4 s (default) or
+  6 s — or a **30 s hard cap**, so thinking pauses are less likely to become
+  separate sentences. Choose the pause length in setup.
+- Each phrase is transcribed by your server, then stitched into the current
+  draft. If the next phrase starts lower-case or with a connector such as
+  “and / but / so / because / then / which / that / or / also”, the previous
+  full stop is replaced with a space or comma. Real sentence boundaries are
+  kept.
+- The draft is editable: use **Edit** in the card to fix names, punctuation or
+  joins before committing.
+- **Add to today’s note** stops any recording, waits for the upload queue, then
+  appends the draft to the daily file. Nothing is appended automatically while
+  you are still thinking.
+- **Clear** removes only the current draft and pending phrase audio; already
+  written daily notes are untouched.
 
-For this hand-off, the identical build is also at
-`dist/BarkPocket-0.2-debug.apk` in the local workspace with
-`dist/BarkPocket-0.2-debug.apk.sha256` (the `dist/` folder is intentionally not
-committed):
+## One file per day
 
-```bash
-cd dist
-sha256sum -c BarkPocket-0.2-debug.apk.sha256
+Committed text goes to:
+
+```text
+Scribe_YYYY-MM-DD.txt
 ```
 
-### Option B — GitHub Actions (no local Android SDK required)
+in the chosen folder, using the phone’s local date. The app finds an existing
+file with that name and appends a paragraph; it does not create a new note for
+each session. A blank line separates commits.
 
-1. Push to `main`/`master`, or open **Actions → Build prototype APK → Run
-   workflow**.
-2. Once successful, download the `BarkPocket-debug-apk` artifact.
-3. Unzip it and transfer `app-debug.apk` to your phone; install it.
-4. The artifact also contains the SHA-256 checksum.
+Each commit writes plain UTF-8 text with no header, timestamp, Markdown or
+metadata. The file is not continuously mirrored while recording.
 
-This workflow compiles the app; it does **not** upload recordings, settings or
-notes. It uses the committed Gradle wrapper, so CI and local builds use the
-same Gradle 8.9.
+## Permissions and why Scribe needs them
 
-### Option C — local Android build
+| Permission | Purpose |
+|---|---|
+| `RECORD_AUDIO` | Capture a phrase only while you are dictating. |
+| `SYSTEM_ALERT_WINDOW` | Show the floating orb and chat card over other apps. This is a special “Display over other apps” access, not a normal prompt. |
+| `POST_NOTIFICATIONS` | Show the ongoing bubble/recording notification. |
+| `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MICROPHONE` | Keep the bubble and microphone session alive when another app is in front. |
+| `INTERNET` | POST phrase WAVs to your server. |
+| `WAKE_LOCK` | Keep the CPU awake during a bounded dictation session. |
 
-Install JDK 17, Android SDK platform 35 and Build Tools 35.0.0. A real Gradle
-wrapper is included, so a separate Gradle installation is not required.
+Scribe always runs its bubble as a **microphone-type foreground service**,
+started from the visible setup activity. This is deliberate: Android 14
+restricts starting a new microphone foreground service from a background
+overlay tap. The service is idle (not recording) until you press the mic, and
+the system privacy indicator only appears while `AudioRecord` is active. The
+ongoing notification is the trade-off for a persistent floating button; use its
+Hide action or the card’s power button to stop it.
 
-```bash
-export ANDROID_HOME="$HOME/Android/Sdk"   # or create local.properties with sdk.dir
-./gradlew :app:assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-If your SDK is elsewhere, create `local.properties`:
-
-```properties
-sdk.dir=/absolute/path/to/Android/Sdk
-```
-
-Android Studio can open this Gradle project directly.
-
-## First run
-
-1. Phone and server on the same trusted LAN. Check the phone can reach:
-   `http://192.168.20.14:24100/health` (replace with your server's address).
-2. Open Bark Pocket; the full endpoint defaults to:
-   `http://192.168.20.14:24100/v1/audio/transcriptions`.
-3. Save connection settings. Leave the API token blank unless your server
-   requires it.
-4. Choose the local Syncthing folder using the system picker. Do **not** choose
-   a cloud provider if you want local-only notes. No broad storage permission
-   is needed.
-5. Select **Dictate + document**, tap Start, and allow microphone and
-   notification access.
-6. Speak normally, pause, check text appears, then tap Stop.
-7. Wait for pending phrases to finish. Confirm a
-   `Voice_<timestamp>_<id>.txt` file appears in the chosen phone folder, then
-   on your PC through Syncthing.
-8. Copy/share if desired. **Discard / new session** clears only private session
-   data; already exported text files are **not** deleted.
-
-## Shortcuts / S24
-
-- Long-press the app icon: **Dictate** / **Dictate + save** select the mode,
-  then tap Start. These do **not** silently start the microphone.
-- Add Bark Pocket from the Quick Settings tile editor: it opens the
-  app/mode chooser.
-- Assign the Samsung Side-button double-press to open Bark Pocket in phone
-  settings. The Side button is an app launcher, not a guaranteed recording
-  toggle.
-- Start in the visible app; stop in the app or the recording notification.
-- The foreground microphone service and bounded wake lock are intended to allow
-  screen-off recording. Verify this on **your** One UI build before relying on
-  it.
-- If Samsung suspends it, inspect the app's battery settings; do not disable all
-  phone power management globally. Calls/other microphone users can interrupt
-  capture.
+Scribe does not start at boot. Opening the app after setup shows the bubble and
+returns to what you were doing. Opening it again while the bubble is running
+opens the card.
 
 ## Backend contract — no server changes required
 
-POST the **full configured URL** as `multipart/form-data`:
+POST the full configured URL as `multipart/form-data`:
 
-- `file`: standalone phrase `.wav`, `audio/wav`, mono 16 kHz signed 16-bit PCM.
+- `file`: standalone phrase WAV, `audio/wav`, mono 16 kHz signed 16-bit PCM.
 
 Expected HTTP 2xx JSON:
 
@@ -150,77 +117,85 @@ Expected HTTP 2xx JSON:
 {"text": "The returned transcript."}
 ```
 
-Only one HTTP request is active at a time. Connect timeout 15 s, read timeout
-180 s. Optional `Authorization: Bearer <token>`. Redirects are not followed.
-No model/language field is required by the existing FastAPI endpoint. The
-server may still perform its own segmentation for other clients/long files.
+Connect timeout 15 s, read timeout 180 s. Optional
+`Authorization: Bearer <token>`. Redirects are not followed. Only one upload is
+active at a time; phrases are sent in order. No model/language field is required
+by the existing FastAPI endpoint.
 
-## Privacy, retention and security
+## Privacy and retention
 
-- Both modes keep a **private on-phone recovery draft** and pending phrase
-  audio. **Dictate means no automatic `.txt` export, not zero disk
-  persistence.**
-- Acknowledged audio is deleted; failed audio stays for Retry. Discard removes
-  the private draft and remaining audio.
-- Android backup is disabled for this app.
-- The API token is in app-private preferences, **not** hardware-encrypted
-  credential storage.
-- HTTP is allowed for the current LAN server and is **not encrypted**. Do not
-  expose that endpoint publicly. Use trusted HTTPS/private networking for
-  remote use.
-- No certificate-validation bypasses are included. Self-signed certificates
-  need a proper trust setup.
-- Other clients' long server jobs can delay phone dictation.
+- The draft and pending WAVs are private app files until you commit or clear
+  them. Committing deletes the draft and acknowledged audio.
+- The API token is in app-private preferences, not hardware-backed credential
+  storage.
+- HTTP is unencrypted and intended for a trusted LAN. Do not expose the endpoint
+  publicly; use trusted HTTPS/private networking remotely.
+- No certificate-validation bypasses, accounts, analytics, advertising,
+  external AI provider or built-in cloud sync.
+- Android cloud backup and device-to-device transfer are disabled for Scribe’s
+  private data via `allowBackup="false"` and `dataExtractionRules`.
+- Scribe never writes to the daily file until you press Add to today’s note.
 
-## Limits / important tests
+## Limits and things to test
 
-- Not a system keyboard: no automatic insertion into other apps. Use
-  Copy/Share.
-- Phrase-live, not word-by-word. Latency includes server inference time.
-- Simple fixed RMS gate `0.012`; quiet speech may be missed and noise may
-  trigger it. Test a quiet voice, normal voice and background noise. Adjust the
-  threshold in `VoiceService.java` only after testing; a production VAD is
-  deferred.
-- Uninterrupted speech is cut at ~13 s; a word crossing the boundary may
-  suffer.
-- Speech shorter than 200 ms may be ignored as noise. Do not use as an archival
-  meeting recorder without validating transcription against the original audio.
-- One recoverable session at a time. Copy/save then Discard before a new
-  session.
-- Maximum recording 1 hour; maximum 120 queued phrases before recording stops.
-- A force-stop/process kill can lose the **current** in-memory phrase (up to
-  ~13 s). Already committed WAV phrases and transcript survive for manual
-  Retry.
-- Recovery and failed uploads require opening the app and tapping Retry; no
-  automatic restart of the microphone, boot receiver or hidden recording.
-- The chosen folder must remain writable. Save failures keep the private draft.
-- Text export is one final file, not continuously mirrored during recording.
+- The overlay is a special-access feature; some OEM builds aggressively remove
+  or restrict bubbles. Check Scribe’s battery setting on One UI without
+  disabling all phone power management.
+- The pause threshold (default 4 s) uses a fixed RMS gate (`0.012`); quiet
+  speech may be missed and noise may trigger it. The 30 s cap can still cut a
+  word. Tap Stop to send immediately, or edit the draft if the server inserts
+  punctuation at an awkward point.
+- Speech shorter than 200 ms is ignored as noise. Do not use this as an
+  archival meeting recorder without checking the transcript against the audio.
+- One draft at a time; maximum 120 queued phrases; maximum one-hour session.
+- A force-stop/process kill can lose the current in-memory phrase (up to 30 s).
+  Committed WAV phrases and the private draft survive for Retry.
+- Recovery and failed uploads require tapping Retry in the card; the microphone
+  is never restarted silently.
+- The notes folder must stay writable and its persisted permission intact.
+- The card cannot host an IME, so **Edit** opens a small full-screen editor.
 - Test airplane mode, server failure, permission denial, screen off, rotation,
-  interruption by calls, app restart, folder permission loss and Syncthing
-  sync.
+  calls, app restart, folder permission loss, overlay revocation, lock screen
+  and Syncthing sync on the actual S24.
 
-## Changes in 0.2
+## Build
 
-- Pinned `buildToolsVersion '35.0.0'` so AGP does not fall back to the
-  undeclared Build Tools 34.0.0.
-- Added the Gradle 8.9 wrapper and switched the GitHub Actions workflow to it.
-- Fixed foreground-service start paths that could crash with
-  `ForegroundServiceDidNotStartInTimeException`; every `startForegroundService`
-  path now enters the foreground or calls `stopSelf`.
-- Retry now uses a `dataSync` foreground service and no longer asks for
-  microphone permission just to upload pending audio.
-- Added a proper adaptive launcher icon, notification icon, monochrome themed
-  icon and string resources.
-- Added explicit microphone-permission checking before opening `AudioRecord`.
-- Replaced hardcoded radio-button IDs with resource IDs, used the non-deprecated
-  `TileService` API, and persisted both read and write access to the export
-  folder.
-- Added `dataExtractionRules` that exclude the app's private draft, token and
-  audio from cloud backup and device-to-device transfer.
-- Recorded real build, lint and APK verification results in
-  [VALIDATION.txt](VALIDATION.txt).
+Requirements: JDK 17, Android SDK platform 35 and Build Tools 35.0.0. The Gradle
+8.9 wrapper is committed.
+
+```bash
+export ANDROID_HOME="$HOME/Android/Sdk"   # or create local.properties with sdk.dir
+./gradlew :app:assembleDebug :app:lintDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Output: `app/build/outputs/apk/debug/app-debug.apk`.
+
+The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
+writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
+artifact.
+
+## Changes in 0.3
+
+- Replaced the full-screen form and mode selector with a draggable gradient
+  bubble and an expanding chat-style card.
+- Opening the configured app now summons the bubble instead of a separate app
+  screen; the settings/onboarding screen appears only when needed.
+- Removed Dictate/Dictate + document modes. One record button, one commit.
+- Commit now appends to a **single daily file**, `Scribe_YYYY-MM-DD.txt`.
+- Raised the silence boundary from 700 ms to a configurable 2/4/6 s (default
+  4 s) and the phrase cap from 13 s to 30 s; added pause-aware joining, a
+  pause-length setting and an editable draft.
+- Added a live waveform, pulsing/recording orb, aurora setup background, spring
+  panel animation, caption pill, haptics, adaptive/monochrome icons and a
+  cohesive violet/cyan/mint palette.
+- Added overlay permission onboarding, a foreground-service bubble, quick
+  settings tile and settings/draft editor activities.
+- Kept private drafts/audio out of backup and device transfer.
 
 ## Design references
 
 - <https://developer.android.com/develop/background-work/services/fgs/service-types>
+- <https://developer.android.com/develop/ui/views/notifications/notification-permission>
+- <https://developer.android.com/reference/android/provider/Settings#ACTION_MANAGE_OVERLAY_PERMISSION>
 - <https://developer.android.com/training/data-storage/shared/documents-files>

@@ -1,8 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
-    <shortcut android:shortcutId="dictate" android:shortcutShortLabel="@string/shortcut_dictate" android:icon="@android:drawable/ic_btn_speak_now">
-        <intent android:action="android.intent.action.VIEW" android:targetPackage="au.local.barkpocket" android:targetClass="au.local.barkpocket.MainActivity"><extra android:name="mode" android:value="dictate" /></intent>
+    <shortcut
+        android:shortcutId="bubble"
+        android:shortcutShortLabel="@string/shortcut_bubble"
+        android:shortcutLongLabel="@string/shortcut_bubble_long"
+        android:icon="@drawable/ic_sparkle">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="au.local.barkpocket"
+            android:targetClass="au.local.barkpocket.MainActivity" />
     </shortcut>
-    <shortcut android:shortcutId="document" android:shortcutShortLabel="@string/shortcut_document" android:icon="@android:drawable/ic_menu_save">
-        <intent android:action="android.intent.action.VIEW" android:targetPackage="au.local.barkpocket" android:targetClass="au.local.barkpocket.MainActivity"><extra android:name="mode" android:value="document" /></intent>
+    <shortcut
+        android:shortcutId="settings"
+        android:shortcutShortLabel="@string/shortcut_settings"
+        android:shortcutLongLabel="@string/shortcut_settings_long"
+        android:icon="@drawable/ic_settings">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="au.local.barkpocket"
+            android:targetClass="au.local.barkpocket.MainActivity">
+            <extra
+                android:name="au.local.barkpocket.EXTRA_SETTINGS"
+                android:value="true" />
+        </intent>
     </shortcut>
 </shortcuts>
