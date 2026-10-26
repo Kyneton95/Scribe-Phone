@@ -7,8 +7,8 @@ android {
         applicationId 'au.local.barkpocket'
         minSdk 34
         targetSdk 35
-        versionCode 5
-        versionName '0.4.0-floating'
+        versionCode 6
+        versionName '0.4.1-floating'
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17

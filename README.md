@@ -6,25 +6,31 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-- **Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40278995525>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
 > `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
 >
-> **0.4.0:** warm paper-and-graphite palette with almost no gradients, Markdown
-> daily notes with `## HH:mm` headings, a proper square stop glyph, bigger
-> minimize/close controls, swipe-down-to-minimize and drag-the-orb-to-bottom to
-> dismiss the bubble. The 0.3.1 launch/expansion crash fixes are retained.
+> **0.4.1 fix:** daily commits now append for real. Android document providers
+> rejected the old SAF query API with `Pre-Android-O query format not supported`,
+> so Scribe never found the existing file; `text/plain` also turned the requested
+> `.md` into `.md.txt`. 0.4.1 uses the modern SAF query API and `text/markdown`,
+> remembers the returned document URI, and consolidates same-day shards into one
+> `.md`.
+>
+> **0.4.0:** paper-and-graphite palette with almost no gradients, `## HH:mm`
+> Markdown sections, a square stop glyph, bigger minimize/close controls,
+> swipe-to-minimize and drag-to-bottom dismissal. The 0.3.1 launch/expansion
+> crash fixes are retained.
 
 ## Delivery status
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.4.0-debug.apk` — **142,035 bytes**
+- **APK:** `dist/Scribe-0.4.1-debug.apk` — **149,411 bytes**
 - **SHA-256:**
-  `043247355c1c89e1f491edf0e9eed21743a0319c2c1194a09ac01a9d3b811efb`
+  `f6a0bf9bf1af36f212f5c61222783bced9bf5f79f41ccc42c27dd48725c4997c`
 - Android lint: **0 errors** (26 warnings, mostly hardcoded localization strings
   and the required adaptive-icon folder).
 - APK integrity, manifest components and signature were checked with
@@ -34,14 +40,15 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
   on the S24. No phone or KVM-capable emulator was available here.
 - Host-side smoke tests passed for setup-activity launch, panel
   construct/render/measure/add, and foreground-service start + panel expansion.
-  They found the 0.3 launch crash fixed in 0.3.1 and exercised the new paper
-  card in 0.4.0.
+  They found the 0.3 launch crash fixed in 0.3.1, exercised the new paper card
+  in 0.4.0, and the 0.4.1 SAF test merged three `.md(...).txt` shards into one
+  ordered `.md` and appended a second commit to the same file.
 - Debug-signed only. A later build from another machine/runner can use a
   different debug key; switching builds may require uninstalling first.
 
 ## Install
 
-1. Copy `Scribe-0.4.0-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.4.1-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -111,9 +118,14 @@ The next transcript.
 ```
 
 The time is exactly `HH:mm` — no seconds, AM/PM, date or timezone. The date is
-only in the file name. Sections are separated by a blank line. Existing
-`Scribe_*.txt` notes from older versions are left untouched; new commits start a
-`.md` file. The file is not continuously mirrored while recording.
+only in the file name. Sections are separated by a blank line. The file is not
+continuously mirrored while recording.
+
+If 0.4.0 left same-day shards such as `Scribe_2026-10-26.md.txt` or
+`Scribe_2026-10-26.md(2).txt`, the next commit merges their contents into
+`Scribe_2026-10-26.md` in timestamp order, verifies the merge, then deletes the
+shards the provider allows it to delete. Files from earlier dates are untouched.
+If a shard cannot be deleted, it is ignored rather than appended to again.
 
 ## Permissions and why Scribe needs them
 
@@ -208,6 +220,23 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`.
 The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
 writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
 artifact.
+
+## Changes in 0.4.1
+
+- Fixed daily appending at the SAF layer. `DocumentsProvider` on Android 14
+  rejects the old five-argument `ContentResolver.query()`; Scribe now uses
+  `query(..., Bundle, CancellationSignal)`, so existing files are found.
+- Markdown files are created with the `text/markdown` MIME type instead of
+  `text/plain`, so the provider no longer renames `name.md` to `name.md.txt`.
+- The returned document URI is persisted for the day; subsequent commits open
+  that exact document even if a provider changes its display name.
+- Same-day `.md.txt` / `.md(n).txt` shards are merged into one ordered `.md`,
+  verified, and deleted. Subsequent commits append to the same `.md`.
+- Daily writes now rewrite the verified full content instead of relying on the
+  provider’s `wa` append mode, which was also losing earlier sections during the
+  host simulation.
+- Added a host-side SAF test with a fake `DocumentsProvider` that reproduces the
+  `.md(...).txt` shard pattern and proves the repair.
 
 ## Changes in 0.4.0
 
