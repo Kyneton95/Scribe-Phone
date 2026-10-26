@@ -70,6 +70,13 @@ PASS: SAF append/repair test with a fake DocumentsProvider (Robolectric,
       - A second append of Fifth note stayed in the same single base.md.
       - This test also caught the obsolete-query failure and the "wa" provider
         truncation behaviour before shipment.
+PASS: GitHub Actions workflow run 40281779746 completed successfully on
+      2026-10-26 with build + lint, checksum and artifact upload.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40281779746
+      CI artifact: 149,403 bytes, SHA-256
+      fe2426443ba16a86fff868e8f7c8a0d5b54af4ce7f2b8507923bfbffc053e0d5
+      (built at commit cf2c042; the runner generated its own debug key).
+
 PASS: Host-side Robolectric UI smoke tests from 0.4.0 remain applicable to the
       unchanged UI: MainActivity launched the paper setup screen; PanelView
       rendered, measured 1000x524 and was added/removed from a simulated
@@ -99,7 +106,6 @@ NOT PERFORMED
     and screen-off recording.
   - Real LAN request, server errors/retry and token path.
   - SAF Markdown append against the actual Syncthing folder/provider.
-  - GitHub Actions execution of the 0.4.1 workflow (first run after push).
   - Stable release signing.
 
 This is a compiled, linted, debug-signed prototype with static/manifest,
