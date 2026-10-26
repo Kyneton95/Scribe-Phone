@@ -1,4 +1,4 @@
-VALIDATION - Scribe floating dictation 0.4.1
+VALIDATION - Scribe floating dictation 0.4.2
 Date: 2026-10-26 (Australia/Melbourne)
 
 Environment
@@ -11,7 +11,7 @@ Environment
   targetSdk    35
   Package      au.local.barkpocket
   Label        Scribe
-  Version      0.4.1-floating (versionCode 6)
+  Version      0.4.2-floating (versionCode 7)
 
 PASS: ./gradlew :app:assembleDebug BUILD SUCCESSFUL.
 PASS: ./gradlew :app:lintDebug 0 errors, 26 warnings.
@@ -19,96 +19,65 @@ PASS: ./gradlew :app:lintDebug 0 errors, 26 warnings.
       required v26 adaptive-icon folder. No permission, manifest,
       foreground-service or API-level errors.
 PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (149,411 bytes).
+      (149,795 bytes).
 PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
       CN=Android Debug, SHA-256
       6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
       This is the local debug key, not a stable release key.
 PASS: unzip -t: no compressed-data errors.
-PASS: aapt2 badging: label "Scribe", versionCode 6, versionName
-      0.4.1-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
-PASS: aapt2 manifest dump: BubbleService declared with
+PASS: aapt2 badging: label "Scribe", versionCode 7, versionName
+      0.4.2-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
+PASS: aapt2 manifest dump: MainActivity uses Theme.Scribe.Launch
+      (windowDisablePreview=true); BubbleService declared with
       foregroundServiceType=microphone (0x80); MainActivity singleTask
       launcher with shortcuts; DraftEditActivity exported=false; VoiceTile
       bound by BIND_QUICK_SETTINGS_TILE; allowBackup=false;
       dataExtractionRules present; usesCleartextTraffic=true.
 
-ROOT CAUSE FIXED IN 0.4.1
-  The daily file was created every commit for two independent reasons:
-  1. DailyNotes used the obsolete five-argument ContentResolver.query().
-     Android's DocumentsProvider throws UnsupportedOperationException
-     ("Pre-Android-O query format not supported") for that overload, so the
-     exact-name lookup always returned no documents.
-  2. The file was created with text/plain. The provider then appended .txt to
-     the requested name.md, producing name.md.txt and, on later commits,
-     name.md(1).txt / name.md(2).txt.
-  Fixes: modern query(..., Bundle, CancellationSignal) API; text/markdown;
-  persisted document URI; same-day shard merge; full-content rewrite instead of
-  relying on provider "wa" append mode.
+LAUNCH FIX IN 0.4.2
+  Cause: MainActivity always called buildUi() in onCreate before checking
+  isReady(), then hid the setup body and waited 220 ms before starting the
+  service. The system also drew a launcher preview from the full app theme.
+  Fix: check isReady() before buildUi(); configured launches install a blank
+  paper handoff View, start the service from onResume(), and finish as soon as
+  BubbleService.isReady(). A launch-only theme disables the system preview.
+  On service failure the setup UI is built lazily and the error is shown.
 
-PASS: Transcript join test (12 cases) on the JVM, including:
-      - "I was thinking." + "about the plan." -> "I was thinking about the plan."
-      - "I was thinking." + "And then we left." -> "I was thinking, and then we left."
-      - "That is done." + "Next, open the file." -> kept the full stop.
-      - "I think." + "I know." -> kept the full stop.
-      - lowercase continuation and connector joining.
-PASS: DailyNotes text/name test (14 checks) on the JVM:
-      - filename Scribe_2026-10-26.md
-      - first commit: "## 09:05\n\nHello world.\n"
-      - later commits get exactly one blank-line separator and their own
-        HH:mm heading; 23:59 and 00:00 accepted; whitespace normalised.
-      - candidate matcher accepts .md, .md.txt, .md(1).txt, .md(2).txt, .txt,
-        (1).txt and (1).md, and rejects unrelated names.
-      - shard order extracts 0 from .md.txt and 2 from .md(2).txt.
-PASS: SAF append/repair test with a fake DocumentsProvider (Robolectric,
-      temporary harness, removed from shipped source):
-      - Seeded three shards: base.md.txt, base.md(1).txt, base.md(2).txt with
-        First/Second/Third notes and HH:mm headings.
-      - DailyNotes.append created exactly one base.md.
-      - It merged First -> Second -> Third -> Fourth in order, deleted the three
-        shards, and left only base.md.
-      - A second append of Fifth note stayed in the same single base.md.
-      - This test also caught the obsolete-query failure and the "wa" provider
-        truncation behaviour before shipment.
-PASS: GitHub Actions workflow run 40281779746 completed successfully on
-      2026-10-26 with build + lint, checksum and artifact upload.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40281779746
-      CI artifact: 149,403 bytes, SHA-256
-      fe2426443ba16a86fff868e8f7c8a0d5b54af4ce7f2b8507923bfbffc053e0d5
-      (built at commit cf2c042; the runner generated its own debug key).
+PASS: Configured-launch host test (Robolectric, temporary harness, SDK 35):
+      - granted RECORD_AUDIO, set canDrawOverlays=true, set folder + endpoint;
+      - MainActivity.onCreate created only one content child;
+      - class is android.view.View (the blank handoff), not the setup root;
+      - output: LAUNCH_CONTENT=android.view.View.
+      This proves the setup layout is not inflated on a configured launch.
 
-PASS: Host-side Robolectric UI smoke tests from 0.4.0 remain applicable to the
-      unchanged UI: MainActivity launched the paper setup screen; PanelView
-      rendered, measured 1000x524 and was added/removed from a simulated
-      WindowManager. The 0.3.1 decor-crash fix remains in place.
-PASS: Code review of the 0.4.1 changes:
-      - all three SAF query sites use the modern Bundle/CancellationSignal API;
-      - target discovery uses stored URI, then exact .md, then creates .md;
-      - same-day shards are merged in suffix/modified order, verified against
-        the target, then deleted;
-      - daily writes read the existing note and rewrite full content, so a
-        provider that treats "wa" as truncate cannot lose earlier sections;
-      - shard deletion failures are ignored after the target contains the text,
-        and a migrated marker prevents re-appending edited notes.
+PASS: 0.4.1 daily-note regression coverage remains valid (no DailyNotes changes
+      in 0.4.2):
+      - modern Bundle/CancellationSignal SAF query API;
+      - text/markdown MIME and persisted document URI;
+      - fake DocumentsProvider test merged three .md(...).txt shards into one
+        ordered .md and appended a second commit to that same file;
+      - transcript joining and Markdown HH:mm formatting tests pass.
+PASS: 0.4.0 UI smoke tests remain valid (no panel/theme changes in 0.4.2):
+      MainActivity setup screen, PanelView 1000x524 add/remove, and the paper
+      UI.
 
 Local hand-off APK
-  Path      dist/Scribe-0.4.1-debug.apk
-  Size      149,411 bytes
-  SHA-256   f6a0bf9bf1af36f212f5c61222783bced9bf5f79f41ccc42c27dd48725c4997c
+  Path      dist/Scribe-0.4.2-debug.apk
+  Size      149,795 bytes
+  SHA-256   a82e780f1a04ba15eac6abe354714f137c03585fa981960fc2a8cdc7ea37cc61
   Signature debug, v2 scheme
 
 NOT PERFORMED
   - Installation or launch on a physical phone or emulator (no device attached;
     no /dev/kvm for an accelerated emulator).
-  - Real Samsung/One UI/Syncthing provider behaviour for create, rename,
-    delete, truncate and multi-file merge.
-  - Microphone foreground service, overlay gestures, notification, lock screen
-    and screen-off recording.
-  - Real LAN request, server errors/retry and token path.
-  - SAF Markdown append against the actual Syncthing folder/provider.
+  - Visual confirmation that the system splash/preview is gone on One UI.
+  - Real overlay permission flow, microphone foreground service and handoff
+    timing on a physical S24.
+  - Real Samsung/One UI/Syncthing provider create/rename/delete/truncate.
+  - Real LAN request, server errors/retry, notification and lock-screen tests.
+  - GitHub Actions execution of the 0.4.2 workflow (first run after push).
   - Stable release signing.
 
-This is a compiled, linted, debug-signed prototype with static/manifest,
-host-side UI, SAF-provider and text-format verification. The next commit should
-repair today's .md(...).txt shards into one .md; a real-device provider test is
-still required.
+This is a compiled, linted, debug-signed prototype. The setup layout is verified
+not to inflate on a configured launch; the remaining visual check is whether
+One UI still draws its own launcher splash before the blank handoff.

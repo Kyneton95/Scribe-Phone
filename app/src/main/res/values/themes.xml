@@ -13,4 +13,8 @@
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
         <item name="android:windowAnimationStyle">@android:style/Animation.Activity</item>
     </style>
+
+    <style name="Theme.Scribe.Launch" parent="@style/Theme.Scribe">
+        <item name="android:windowDisablePreview">true</item>
+    </style>
 </resources>

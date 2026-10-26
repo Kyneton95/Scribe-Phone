@@ -60,6 +60,7 @@ public class MainActivity extends Activity {
     private boolean awaitingFolder;
     private boolean startWhenReady;
     private boolean autoStarted;
+    private boolean handoffPending;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -67,20 +68,30 @@ public class MainActivity extends Activity {
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
         settingsMode = settingsRequested(getIntent());
         edgeToEdge();
+        if (!settingsMode && isReady()) {
+            // Do not inflate the setup form just to hide it again. Keep a blank
+            // paper window while the floating service starts, then finish.
+            autoStarted = true;
+            handoffPending = true;
+            View blank = new View(this);
+            blank.setBackgroundColor(Ui.PAPER);
+            content = blank;
+            setContentView(blank);
+            return;
+        }
         buildUi();
         updateStatus();
-        if (!settingsMode && isReady()) {
-            autoStarted = true;
-            content.setVisibility(View.INVISIBLE);
-            content.postDelayed(() -> startBubble(true), 220);
-        }
     }
 
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
         settingsMode = settingsRequested(intent);
-        if (content != null) content.setVisibility(View.VISIBLE);
+        if (settingsMode) {
+            ensureSetupUi();
+        } else if (content != null) {
+            content.setVisibility(View.VISIBLE);
+        }
         updateStatus();
         if (!settingsMode && isReady() && !autoStarted) {
             startBubble(true);
@@ -89,6 +100,16 @@ public class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        if (handoffPending) {
+            // Start only once the activity is actually visible, which keeps the
+            // microphone foreground service legal on Android 14.
+            content.post(() -> {
+                if (handoffPending && !isFinishing() && !isDestroyed()) {
+                    handoffPending = false;
+                    startBubble(true);
+                }
+            });
+        }
         awaitingFolder = false;
         updateStatus();
         if (awaitingOverlay) {
@@ -611,7 +632,7 @@ public class MainActivity extends Activity {
             awaitBubbleStart(System.currentTimeMillis() + 2200L);
         } catch (Exception e) {
             autoStarted = false;
-            if (content != null) content.setVisibility(View.VISIBLE);
+            ensureSetupUi();
             showError(e.getMessage() == null ? "Could not start the bubble." : e.getMessage());
         }
     }
@@ -622,7 +643,7 @@ public class MainActivity extends Activity {
                 finishAndRemoveTask();
             } else if (System.currentTimeMillis() >= deadline) {
                 autoStarted = false;
-                content.setVisibility(View.VISIBLE);
+                ensureSetupUi();
                 showError("The floating bubble could not start. Check the permissions.");
             } else {
                 awaitBubbleStart(deadline);
@@ -679,6 +700,14 @@ public class MainActivity extends Activity {
         view.setTextColor(ok ? Ui.MINT : Ui.PEACH);
         view.setBackground(Ui.rounded(ok ? Ui.alpha(Ui.MINT, 26) : Ui.alpha(Ui.PEACH, 26),
                 10, this));
+    }
+
+    private void ensureSetupUi() {
+        if (error != null) return;
+        handoffPending = false;
+        autoStarted = false;
+        buildUi();
+        updateStatus();
     }
 
     private void showError(String message) {

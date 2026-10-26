@@ -6,12 +6,16 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-- **Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40281779746>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
 > `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
+>
+> **0.4.2:** opening the app when setup is already complete no longer inflates
+> the setup screen first. Scribe keeps a blank paper handoff, starts the floating
+> service from `onResume`, and finishes; the launcher preview is disabled. Setup
+> still appears when configuration or permissions are incomplete.
 >
 > **0.4.1 fix:** daily commits now append for real. Android document providers
 > rejected the old SAF query API with `Pre-Android-O query format not supported`,
@@ -29,9 +33,9 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.4.1-debug.apk` — **149,411 bytes**
+- **APK:** `dist/Scribe-0.4.2-debug.apk` — **149,795 bytes**
 - **SHA-256:**
-  `f6a0bf9bf1af36f212f5c61222783bced9bf5f79f41ccc42c27dd48725c4997c`
+  `a82e780f1a04ba15eac6abe354714f137c03585fa981960fc2a8cdc7ea37cc61`
 - Android lint: **0 errors** (26 warnings, mostly hardcoded localization strings
   and the required adaptive-icon folder).
 - APK integrity, manifest components and signature were checked with
@@ -43,13 +47,15 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
   construct/render/measure/add, and foreground-service start + panel expansion.
   They found the 0.3 launch crash fixed in 0.3.1, exercised the new paper card
   in 0.4.0, and the 0.4.1 SAF test merged three `.md(...).txt` shards into one
-  ordered `.md` and appended a second commit to the same file.
+  ordered `.md` and appended a second commit to the same file. The 0.4.2 launch
+  test confirms a configured launch contains only the blank handoff View and
+  does not inflate the setup form.
 - Debug-signed only. A later build from another machine/runner can use a
   different debug key; switching builds may require uninstalling first.
 
 ## Install
 
-1. Copy `Scribe-0.4.1-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.4.2-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -148,9 +154,10 @@ ongoing notification is the trade-off for a persistent floating button; use its
 Hide action, the card’s X button, or drag the orb to the Close target to stop
 it.
 
-Scribe does not start at boot. Opening the app after setup shows the bubble and
-returns to what you were doing. Opening it again while the bubble is running
-opens the card.
+Scribe does not start at boot. Opening the app after setup hands off directly to
+the bubble/card without inflating the setup screen; the setup form only appears
+when configuration or permissions are incomplete. Opening it again while the
+bubble is running opens the card.
 
 ## Backend contract — no server changes required
 
@@ -221,6 +228,21 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`.
 The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
 writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
 artifact.
+
+## Changes in 0.4.2
+
+- Removed the setup-screen flash on launch. `MainActivity` now checks whether
+  setup is complete before calling `buildUi()`; a configured launch uses a
+  blank paper handoff instead.
+- The bubble is started from `onResume()` rather than a 220 ms delayed post, so
+  the handoff is quicker while the activity is still visible for Android 14
+  microphone-FGS eligibility.
+- Added `android:windowDisablePreview="true"` to a launch-only theme so the
+  system does not draw a full setup preview first.
+- If the service fails to become ready, the real setup UI is built and the error
+  is shown; the blank handoff is not left behind.
+- Added a host test asserting a configured launch contains only the blank
+  handoff View, not the setup layout.
 
 ## Changes in 0.4.1
 
