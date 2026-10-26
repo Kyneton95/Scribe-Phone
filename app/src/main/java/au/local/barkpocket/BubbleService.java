@@ -23,6 +23,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -66,6 +67,7 @@ public class BubbleService extends Service {
     private static final String PREF_X = "bubble_x";
     private static final String PREF_Y = "bubble_y";
     private static final String CHANNEL = "scribe_bubble";
+    private static final String TAG = "ScribeBubble";
     private static final int NOTIFICATION_ID = 41;
 
     private static final int SAMPLE_RATE = 16000;
@@ -321,6 +323,35 @@ public class BubbleService extends Service {
             store.error = "Allow Scribe to display over other apps.";
             return;
         }
+        try {
+            showPanelInternal();
+        } catch (Throwable t) {
+            Log.e(TAG, "Could not open floating card", t);
+            if (panel != null) {
+                try {
+                    windowManager.removeView(panel);
+                } catch (Exception ignored) {
+                }
+                panel = null;
+            }
+            panelOpen = false;
+            store.error = "Could not open the card: " + describe(t);
+            store.status = "Card failed to open";
+            try {
+                android.widget.Toast.makeText(this, store.error,
+                        android.widget.Toast.LENGTH_LONG).show();
+            } catch (Exception ignored) {
+            }
+            try {
+                showCaption("Couldn’t open the card");
+                refreshUi();
+                updateNotification();
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    private void showPanelInternal() {
         if (panel != null && panel.getParent() != null) {
             panel.animate().cancel();
             panel.setAlpha(1f);
@@ -370,8 +401,11 @@ public class BubbleService extends Service {
                 }
             });
         }
-        int width = Math.min(Ui.dp(this, 360),
-                Ui.screenWidth(this) - Ui.dp(this, 24));
+        int availableWidth = Math.max(Ui.dp(this, 200),
+                Ui.screenWidth(this) - Ui.dp(this, 16));
+        int width = Math.max(1, Math.min(Ui.dp(this, 360), availableWidth));
+        int availableHeight = Math.max(Ui.dp(this, 240),
+                Ui.screenHeight(this) - Ui.statusBar(this) - Ui.navigationBar(this));
         panelLp = new WindowManager.LayoutParams(
                 width, WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
@@ -381,9 +415,7 @@ public class BubbleService extends Service {
                 PixelFormat.TRANSLUCENT);
         panelLp.gravity = Gravity.TOP | Gravity.START;
         panel.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
-                View.MeasureSpec.makeMeasureSpec(
-                        Ui.screenHeight(this) - Ui.statusBar(this) - Ui.navigationBar(this),
-                        View.MeasureSpec.AT_MOST));
+                View.MeasureSpec.makeMeasureSpec(availableHeight, View.MeasureSpec.AT_MOST));
         positionPanel();
         panel.setAlpha(0f);
         panel.setScaleX(0.92f);
@@ -415,6 +447,7 @@ public class BubbleService extends Service {
         int status = Ui.statusBar(this);
         int nav = Ui.navigationBar(this);
         int width = panelLp.width;
+        if (width <= 0) return;
         int height = Math.max(panel.getMeasuredHeight(), Ui.dp(this, 220))
                 + Ui.dp(this, 80);
         boolean bubbleOnLeft = bubbleLp != null && bubbleLp.x + bubbleSize / 2 < screenW / 2;
@@ -1114,10 +1147,22 @@ public class BubbleService extends Service {
             bubble.setHasDraft(store.hasDraft());
         }
         if (panelOpen && panel != null) {
-            panel.setLevel(level);
-            panel.render(listening, store.busy, store.draft, statusText(), store.error,
-                    store.pendingCount(), commitWhenIdle, DailyNotes.fileName(),
-                    !store.folder().isEmpty());
+            try {
+                panel.setLevel(level);
+                panel.render(listening, store.busy, store.draft, statusText(), store.error,
+                        store.pendingCount(), commitWhenIdle, DailyNotes.fileName(),
+                        !store.folder().isEmpty());
+            } catch (Throwable t) {
+                Log.e(TAG, "Could not render floating card", t);
+                store.error = "Card error: " + describe(t);
+                store.status = "Card failed";
+                panelOpen = false;
+                try {
+                    windowManager.removeView(panel);
+                } catch (Exception ignored) {
+                }
+                panel = null;
+            }
         }
     }
 
@@ -1140,5 +1185,12 @@ public class BubbleService extends Service {
 
     private static String message(Exception e) {
         return e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage();
+    }
+
+    private static String describe(Throwable t) {
+        String message = t.getMessage();
+        return message == null || message.isEmpty()
+                ? t.getClass().getSimpleName()
+                : t.getClass().getSimpleName() + ": " + message;
     }
 }

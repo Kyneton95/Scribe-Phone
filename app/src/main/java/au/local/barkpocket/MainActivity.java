@@ -148,6 +148,9 @@ public class MainActivity extends Activity {
 
     private void edgeToEdge() {
         Window window = getWindow();
+        // PhoneWindow#getInsetsController() dereferences mDecor; make sure the
+        // decor exists before touching the controller from onCreate.
+        window.getDecorView();
         window.setStatusBarColor(Color.TRANSPARENT);
         window.setNavigationBarColor(Color.TRANSPARENT);
         if (Build.VERSION.SDK_INT >= 30) {

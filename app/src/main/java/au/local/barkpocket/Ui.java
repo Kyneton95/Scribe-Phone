@@ -116,27 +116,49 @@ final class Ui {
     }
 
     static int screenWidth(Context context) {
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        Rect bounds = wm.getCurrentWindowMetrics().getBounds();
-        return bounds.width();
+        int width = 0;
+        try {
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            Rect bounds = wm.getCurrentWindowMetrics().getBounds();
+            width = bounds.width();
+        } catch (Exception ignored) {
+        }
+        int display = context.getResources().getDisplayMetrics().widthPixels;
+        if (width <= 0) width = display;
+        return Math.max(1, Math.max(width, display));
     }
 
     static int screenHeight(Context context) {
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        Rect bounds = wm.getCurrentWindowMetrics().getBounds();
-        return bounds.height();
+        int height = 0;
+        try {
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            Rect bounds = wm.getCurrentWindowMetrics().getBounds();
+            height = bounds.height();
+        } catch (Exception ignored) {
+        }
+        int display = context.getResources().getDisplayMetrics().heightPixels;
+        if (height <= 0) height = display;
+        return Math.max(1, Math.max(height, display));
     }
 
     static int statusBar(Context context) {
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        WindowInsets insets = wm.getCurrentWindowMetrics().getWindowInsets();
-        return insets.getInsets(WindowInsets.Type.statusBars()).top;
+        try {
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            WindowInsets insets = wm.getCurrentWindowMetrics().getWindowInsets();
+            return Math.max(0, insets.getInsets(WindowInsets.Type.statusBars()).top);
+        } catch (Exception ignored) {
+            return 0;
+        }
     }
 
     static int navigationBar(Context context) {
-        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-        WindowInsets insets = wm.getCurrentWindowMetrics().getWindowInsets();
-        return insets.getInsets(WindowInsets.Type.navigationBars()).bottom;
+        try {
+            WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            WindowInsets insets = wm.getCurrentWindowMetrics().getWindowInsets();
+            return Math.max(0, insets.getInsets(WindowInsets.Type.navigationBars()).bottom);
+        } catch (Exception ignored) {
+            return 0;
+        }
     }
 
     static int touchSlop(Context context) {

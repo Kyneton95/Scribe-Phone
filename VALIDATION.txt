@@ -1,4 +1,4 @@
-VALIDATION - Scribe floating dictation 0.3
+VALIDATION - Scribe floating dictation 0.3.1
 Date: 2026-10-26 (Australia/Melbourne)
 
 Environment
@@ -11,7 +11,7 @@ Environment
   targetSdk    35
   Package      au.local.barkpocket
   Label        Scribe
-  Version      0.3-floating (versionCode 3)
+  Version      0.3.1-floating (versionCode 4)
 
 PASS: ./gradlew :app:assembleDebug BUILD SUCCESSFUL.
 PASS: ./gradlew :app:lintDebug 0 errors, 33 warnings.
@@ -20,14 +20,14 @@ PASS: ./gradlew :app:lintDebug 0 errors, 33 warnings.
       path and a programmatic custom-view constructor. No warning is a
       permission, manifest, foreground-service or API-level failure.
 PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (137,293 bytes).
+      (138,721 bytes).
 PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
       CN=Android Debug, SHA-256
       6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
       This is the local debug key, not a stable release key.
 PASS: unzip -t: no compressed-data errors.
-PASS: aapt2 badging: label "Scribe", versionCode 3, versionName
-      0.3-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
+PASS: aapt2 badging: label "Scribe", versionCode 4, versionName
+      0.3.1-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
       Permissions: INTERNET, RECORD_AUDIO, POST_NOTIFICATIONS,
       FOREGROUND_SERVICE, FOREGROUND_SERVICE_MICROPHONE, WAKE_LOCK,
       SYSTEM_ALERT_WINDOW.
@@ -59,19 +59,22 @@ PASS: Code review of the foreground-service start path: MainActivity only
       to the main thread; pending uploads are re-kicked if a phrase lands while
       the upload loop is releasing; onDestroy resets active/busy flags.
 
-PASS: GitHub Actions workflow run 40271826607 completed successfully on
-      2026-10-26 with the new build + lint step. The artifact contained the APK
-      and SHA-256 file.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40271826607
-      CI artifact: 137,293 bytes, SHA-256
-      8205671d545fc385e93a52fc0eb4c545004bb8494a0791028475606284fe0193
-      (built at commit ec38b81; the runner generated its own debug key, so the
-      certificate differs from the local hand-off APK).
+PASS: Host-side Robolectric smoke tests (temporary harness, removed from the
+      shipped source):
+      - MainActivity setup launch initially failed with
+        NullPointerException at MainActivity.edgeToEdge line 155 because
+        PhoneWindow.getInsetsController() dereferenced a null decor. After
+        forcing window.getDecorView() first, the activity launched successfully.
+      - PanelView constructed, rendered, measured (900x514 in the test), added
+        to a simulated WindowManager and removed without exception.
+      - BubbleService started, reported ready and accepted SHOW_PANEL in the
+        same simulated environment.
+      DraftEditActivity received the same decor fix.
 
 Local hand-off APK
-  Path      dist/Scribe-0.3-debug.apk
-  Size      137,293 bytes
-  SHA-256   ac189775f1d009198a8e3e9a332ff42db869f3c3725b53f23f6ac34508f8bf75
+  Path      dist/Scribe-0.3.1-debug.apk
+  Size      138,721 bytes
+  SHA-256   f7af8507198f59f29814dd025b72a71614ce74570e86258031d6d4e6f222cfb4
   Signature debug, v2 scheme
 
 NOT PERFORMED
@@ -83,6 +86,7 @@ NOT PERFORMED
   - Real LAN request, server errors/retry, token path and 30 s server latency.
   - SAF daily-file append against the actual Syncthing folder/provider.
   - Overlay revocation, folder permission loss, calls, rotation and process kill.
+  - GitHub Actions execution of the 0.3.1 workflow (first run after push).
   - Stable release signing.
 
 This is a compiled, linted, debug-signed prototype with static/manifest and

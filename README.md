@@ -6,20 +6,23 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-**Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40271826607>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
-> `au.local.barkpocket` so a 0.3 build can update a 0.2 install. The old
+> `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
+>
+> **0.3.1 bugfix:** opening setup no longer crashes on the missing window decor,
+> and a card-expansion failure is now caught, logged and shown instead of
+> killing the bubble. Screen metrics and panel width are clamped defensively.
 
 ## Delivery status
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.3-debug.apk` — **137,293 bytes**
+- **APK:** `dist/Scribe-0.3.1-debug.apk` — **138,721 bytes**
 - **SHA-256:**
-  `ac189775f1d009198a8e3e9a332ff42db869f3c3725b53f23f6ac34508f8bf75`
+  `f7af8507198f59f29814dd025b72a71614ce74570e86258031d6d4e6f222cfb4`
 - Android lint: **0 errors** (33 warnings, mostly draw-time allocations and
   hardcoded localization strings).
 - APK integrity, manifest components and signature were checked with
@@ -27,12 +30,15 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 - **Not device-tested.** The floating overlay, microphone foreground service,
   notification, lock-screen, real server and Syncthing sync still need testing
   on the S24. No phone or KVM-capable emulator was available here.
+- Host-side smoke tests passed for setup-activity launch, panel
+  construct/render/measure/add, and foreground-service start + panel expansion.
+  They found the 0.3 launch crash fixed in 0.3.1.
 - Debug-signed only. A later build from another machine/runner can use a
   different debug key; switching builds may require uninstalling first.
 
 ## Install
 
-1. Copy `Scribe-0.3-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.3.1-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -175,6 +181,17 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`.
 The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
 writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
 artifact.
+
+## Changes in 0.3.1
+
+- Fixed the startup `NullPointerException` from calling
+  `Window.getInsetsController()` before the decor view existed. The decor is
+  now created first in both setup and the draft editor.
+- Isolated card expansion: a failure now removes the broken panel, logs the
+  stack trace, shows the exception in a toast, and leaves the bubble running.
+- Screen width/height now fall back to display metrics if a service context
+  reports empty window metrics, and the panel width/height are clamped positive.
+- `refreshUi` can no longer take down the service if a card render fails.
 
 ## Changes in 0.3
 

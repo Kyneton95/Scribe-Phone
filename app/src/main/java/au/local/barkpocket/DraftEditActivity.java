@@ -26,6 +26,8 @@ public class DraftEditActivity extends Activity {
         super.onCreate(state);
         store = SessionStore.get(this);
         Window window = getWindow();
+        // PhoneWindow#getInsetsController() dereferences mDecor.
+        window.getDecorView();
         window.setStatusBarColor(Color.TRANSPARENT);
         window.setNavigationBarColor(Color.TRANSPARENT);
         window.setDecorFitsSystemWindows(false);
