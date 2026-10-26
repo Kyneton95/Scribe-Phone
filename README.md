@@ -6,6 +6,7 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
+**Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40271511134>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
@@ -16,9 +17,9 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.3-debug.apk` — **240,629 bytes**
+- **APK:** `dist/Scribe-0.3-debug.apk` — **137,293 bytes**
 - **SHA-256:**
-  `9417900fcd8bea0744ae24baaa5344b5b0577daa0387b69136045b889eae0592`
+  `ac189775f1d009198a8e3e9a332ff42db869f3c3725b53f23f6ac34508f8bf75`
 - Android lint: **0 errors** (33 warnings, mostly draw-time allocations and
   hardcoded localization strings).
 - APK integrity, manifest components and signature were checked with

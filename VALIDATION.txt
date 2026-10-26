@@ -20,7 +20,7 @@ PASS: ./gradlew :app:lintDebug 0 errors, 33 warnings.
       path and a programmatic custom-view constructor. No warning is a
       permission, manifest, foreground-service or API-level failure.
 PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (240,629 bytes).
+      (137,293 bytes).
 PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
       CN=Android Debug, SHA-256
       6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
@@ -59,10 +59,19 @@ PASS: Code review of the foreground-service start path: MainActivity only
       to the main thread; pending uploads are re-kicked if a phrase lands while
       the upload loop is releasing; onDestroy resets active/busy flags.
 
+PASS: GitHub Actions workflow run 40271511134 completed successfully on
+      2026-10-26 with the new build + lint step. The artifact contained the APK
+      and SHA-256 file.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40271511134
+      CI artifact: 137,141 bytes, SHA-256
+      ec733460e1094d88572b4c49bbfe09cfe8bac604647e53939e50e1c5173a26a9
+      (built at commit f92cde6; the runner generated its own debug key, so the
+      certificate differs from the local hand-off APK).
+
 Local hand-off APK
   Path      dist/Scribe-0.3-debug.apk
-  Size      240,629 bytes
-  SHA-256   9417900fcd8bea0744ae24baaa5344b5b0577daa0387b69136045b889eae0592
+  Size      137,293 bytes
+  SHA-256   ac189775f1d009198a8e3e9a332ff42db869f3c3725b53f23f6ac34508f8bf75
   Signature debug, v2 scheme
 
 NOT PERFORMED
@@ -74,7 +83,6 @@ NOT PERFORMED
   - Real LAN request, server errors/retry, token path and 30 s server latency.
   - SAF daily-file append against the actual Syncthing folder/provider.
   - Overlay revocation, folder permission loss, calls, rotation and process kill.
-  - GitHub Actions execution of the 0.3 workflow (first run after push).
   - Stable release signing.
 
 This is a compiled, linted, debug-signed prototype with static/manifest and

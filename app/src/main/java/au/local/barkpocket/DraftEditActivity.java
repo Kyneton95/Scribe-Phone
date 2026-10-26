@@ -29,9 +29,12 @@ public class DraftEditActivity extends Activity {
         window.setStatusBarColor(Color.TRANSPARENT);
         window.setNavigationBarColor(Color.TRANSPARENT);
         window.setDecorFitsSystemWindows(false);
-        window.getInsetsController().setSystemBarsAppearance(0,
-                android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                        | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        android.view.WindowInsetsController controller = window.getInsetsController();
+        if (controller != null) {
+            controller.setSystemBarsAppearance(0,
+                    android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
+        }
         window.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
                 | android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
         build();
@@ -145,6 +148,11 @@ public class DraftEditActivity extends Activity {
     }
 
     private void save() {
+        if (store.active || store.busy) {
+            android.widget.Toast.makeText(this, "Wait for the current phrase to finish first.",
+                    android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
         try {
             store.setDraft(editor.getText().toString());
             Ui.haptic(editor);
