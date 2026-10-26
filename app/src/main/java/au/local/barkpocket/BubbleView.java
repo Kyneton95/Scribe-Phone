@@ -4,12 +4,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.LinearGradient;
-import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.RadialGradient;
-import android.graphics.Shader;
-import android.graphics.SweepGradient;
 import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.view.MotionEvent;
@@ -98,6 +93,7 @@ final class BubbleView extends View {
     @Override protected void onDraw(Canvas canvas) {
         float w = getWidth();
         float h = getHeight();
+        if (w == 0 || h == 0) return;
         float cx = w / 2f;
         float cy = h / 2f;
         float r = Math.min(w, h) * 0.35f;
@@ -106,65 +102,62 @@ final class BubbleView extends View {
         float breathe = recording ? 1f + 0.045f * (float) Math.sin(t * 5.2) : 1f;
         r *= breathe;
 
-        // Soft coloured aura.
+        // Flat pencil-smudge aura, not a neon glow.
         float aura = Math.min(r * 2.1f, Math.min(w, h) / 2f - Ui.dp(getContext(), 1));
-        paint.setShader(new RadialGradient(cx, cy, aura,
-                new int[]{Ui.alpha(recording ? Ui.MINT : Ui.VIOLET, recording ? 100 : 65),
-                        Color.TRANSPARENT}, null, Shader.TileMode.CLAMP));
+        paint.setShader(null);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Ui.alpha(recording ? Ui.BRICK : Ui.TERRACOTTA, recording ? 34 : 20));
         canvas.drawCircle(cx, cy, aura, paint);
+        paint.setColor(Ui.alpha(recording ? Ui.BRICK : Ui.TERRACOTTA, recording ? 24 : 13));
+        canvas.drawCircle(cx, cy, aura * 0.78f, paint);
 
-        // Slow iridescent orbit.
-        Matrix matrix = new Matrix();
-        matrix.setRotate(phase * 360f, cx, cy);
-        SweepGradient sweep = new SweepGradient(cx, cy,
-                new int[]{Ui.VIOLET, Ui.BLUE, Ui.MINT, Ui.VIOLET}, null);
-        sweep.setLocalMatrix(matrix);
-        stroke.setShader(sweep);
+        // A single graphite/pencil orbit ring.
+        stroke.setShader(null);
         stroke.setStyle(Paint.Style.STROKE);
         stroke.setStrokeWidth(Ui.dp(getContext(), 2.2f));
-        stroke.setAlpha(recording ? 255 : 150);
+        stroke.setColor(recording ? Ui.BRICK : Ui.PENCIL);
+        stroke.setAlpha(recording ? 230 : 190);
         canvas.drawCircle(cx, cy, r + Ui.dp(getContext(), 5), stroke);
 
         if (recording) {
-            stroke.setShader(null);
-            stroke.setStyle(Paint.Style.STROKE);
             stroke.setStrokeWidth(Ui.dp(getContext(), 1.2f));
             for (int i = 0; i < 3; i++) {
                 float p = (phase + i / 3f) % 1f;
                 float ringMax = Math.min(w, h) / 2f - Ui.dp(getContext(), 1);
                 float ring = Math.min(ringMax, r + Ui.dp(getContext(), 5) + p * Ui.dp(getContext(), 16));
-                stroke.setColor(Ui.alpha(Ui.MINT, (int) (150 * (1f - p))));
+                stroke.setColor(Ui.alpha(Ui.BRICK, (int) (150 * (1f - p))));
                 canvas.drawCircle(cx, cy, ring, stroke);
             }
         }
 
-        // Main orb with a gentle shadow.
-        paint.setShader(new LinearGradient(cx - r, cy - r, cx + r, cy + r,
-                new int[]{Ui.VIOLET, Ui.BLUE}, null, Shader.TileMode.CLAMP));
-        paint.setShadowLayer(Ui.dp(getContext(), 14), 0, Ui.dp(getContext(), 5), 0x90000000);
+        // Solid graphite body.
+        paint.setShader(null);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Ui.INK);
+        paint.setShadowLayer(Ui.dp(getContext(), 14), 0, Ui.dp(getContext(), 5), 0x55000000);
         canvas.drawCircle(cx, cy, r, paint);
         paint.clearShadowLayer();
 
-        // Glass highlight.
-        paint.setShader(new RadialGradient(cx - r * 0.4f, cy - r * 0.5f, r * 1.25f,
-                new int[]{0x66FFFFFF, Color.TRANSPARENT}, null, Shader.TileMode.CLAMP));
-        canvas.drawCircle(cx, cy, r, paint);
+        // A fine paper-coloured inner ring replaces the glass highlight.
+        stroke.setColor(Ui.alpha(Ui.PAPER, 60));
+        stroke.setStrokeWidth(Ui.dp(getContext(), 1.1f));
+        canvas.drawCircle(cx, cy, r * 0.82f, stroke);
 
-        int icon = Math.round(r * 0.86f);
+        int icon = Math.round(r * 0.78f);
         mic.setBounds(Math.round(cx - icon / 2f), Math.round(cy - icon / 2f),
                 Math.round(cx + icon / 2f), Math.round(cy + icon / 2f));
-        mic.setTint(Color.WHITE);
+        mic.setTint(Ui.PAPER);
         mic.draw(canvas);
 
         if (hasDraft) {
             paint.setShader(null);
-            paint.setColor(Ui.MINT);
+            paint.setColor(Ui.PENCIL);
             canvas.drawCircle(w - Ui.dp(getContext(), 8), Ui.dp(getContext(), 8),
                     Ui.dp(getContext(), 5), paint);
             stroke.setShader(null);
             stroke.setStyle(Paint.Style.STROKE);
             stroke.setStrokeWidth(Ui.dp(getContext(), 2));
-            stroke.setColor(0xFF101421);
+            stroke.setColor(Ui.INK);
             canvas.drawCircle(w - Ui.dp(getContext(), 8), Ui.dp(getContext(), 8),
                     Ui.dp(getContext(), 5), stroke);
         }

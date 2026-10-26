@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg">#FF07080D</color>
-    <color name="bg2">#FF101421</color>
-    <color name="surface">#FF141826</color>
-    <color name="surface2">#FF1C2234</color>
-    <color name="text">#FFF5F7FF</color>
-    <color name="muted">#FF98A2B8</color>
-    <color name="violet">#FF8B5CF6</color>
-    <color name="blue">#FF38BDF8</color>
-    <color name="mint">#FF6EE7B7</color>
-    <color name="peach">#FFFDBA74</color>
-    <color name="danger">#FFFB7185</color>
-    <color name="ic_launcher_background">#FF0B0E17</color>
+    <color name="paper">#FFF4F0E6</color>
+    <color name="paper_deep">#FFE9E2D4</color>
+    <color name="surface">#FFFBF8F1</color>
+    <color name="surface_alt">#FFEDE6D8</color>
+    <color name="ink">#FF2E2B27</color>
+    <color name="ink_soft">#FF4C4740</color>
+    <color name="muted">#FF7A746A</color>
+    <color name="pencil">#FFE4C36A</color>
+    <color name="terracotta">#FF9E5638</color>
+    <color name="sage">#FF5F7D5B</color>
+    <color name="ochre">#FFA97825</color>
+    <color name="brick">#FFA24432</color>
+    <color name="ic_launcher_background">#FF2E2B27</color>
 </resources>

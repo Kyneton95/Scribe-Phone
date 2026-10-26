@@ -99,6 +99,11 @@ public class BubbleService extends Service {
     private BubbleView bubble;
     private PanelView panel;
     private TextView caption;
+    private TextView dropTarget;
+    private WindowManager.LayoutParams dropTargetLp;
+    private int dropCenterX;
+    private int dropCenterY;
+    private boolean dropArmed;
     private WindowManager.LayoutParams bubbleLp;
     private WindowManager.LayoutParams panelLp;
     private WindowManager.LayoutParams captionLp;
@@ -207,6 +212,7 @@ public class BubbleService extends Service {
         }
         if (panelOpen) hidePanel();
         hideCaptionNow(false);
+        hideDropTarget();
     }
 
     @Override public void onDestroy() {
@@ -255,6 +261,7 @@ public class BubbleService extends Service {
                     dragStartX = bubbleLp.x;
                     dragStartY = bubbleLp.y;
                 }
+                showDropTarget();
             }
 
             @Override public void onDrag(float dx, float dy) {
@@ -265,10 +272,23 @@ public class BubbleService extends Service {
                     windowManager.updateViewLayout(bubble, bubbleLp);
                 } catch (Exception ignored) {
                 }
+                updateDropTarget();
             }
 
             @Override public void onDragEnd() {
-                snapBubble();
+                boolean close = dropArmed;
+                hideDropTarget();
+                if (close) {
+                    if (bubble != null) Ui.haptic(bubble);
+                    try {
+                        android.widget.Toast.makeText(BubbleService.this, "Scribe closed",
+                                android.widget.Toast.LENGTH_SHORT).show();
+                    } catch (Exception ignored) {
+                    }
+                    stopEverything();
+                } else {
+                    snapBubble();
+                }
             }
         });
 
@@ -479,6 +499,7 @@ public class BubbleService extends Service {
     }
 
     private void removeOverlays() {
+        hideDropTarget();
         if (panel != null) {
             try {
                 windowManager.removeView(panel);
@@ -504,6 +525,81 @@ public class BubbleService extends Service {
         captionShown = false;
     }
 
+    private void showDropTarget() {
+        if (dropTarget != null) return;
+        try {
+            dropTarget = Ui.text(this, "Close", 12, Ui.INK, true);
+            dropTarget.setGravity(Gravity.CENTER);
+            dropTarget.setPadding(Ui.dp(this, 15), Ui.dp(this, 9),
+                    Ui.dp(this, 15), Ui.dp(this, 9));
+            dropTarget.setBackground(Ui.outline(Ui.SURFACE, 0x552E2B27, 22, this));
+            setDropTargetIcon(Ui.INK);
+            dropTarget.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            dropCenterX = Ui.screenWidth(this) / 2;
+            dropCenterY = Ui.screenHeight(this) - Ui.navigationBar(this) - Ui.dp(this, 96);
+            dropTargetLp = new WindowManager.LayoutParams(
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.WRAP_CONTENT,
+                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                            | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                            | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    PixelFormat.TRANSLUCENT);
+            dropTargetLp.gravity = Gravity.TOP | Gravity.START;
+            dropTargetLp.x = dropCenterX - dropTarget.getMeasuredWidth() / 2;
+            dropTargetLp.y = dropCenterY - dropTarget.getMeasuredHeight() / 2;
+            windowManager.addView(dropTarget, dropTargetLp);
+            dropTarget.setAlpha(0f);
+            dropTarget.setScaleX(0.85f);
+            dropTarget.setScaleY(0.85f);
+            dropTarget.animate().alpha(1f).scaleX(1f).scaleY(1f)
+                    .setDuration(180).start();
+            dropArmed = false;
+        } catch (Exception e) {
+            Log.w(TAG, "Could not show drop target", e);
+            dropTarget = null;
+        }
+    }
+
+    private void updateDropTarget() {
+        if (dropTarget == null || bubbleLp == null) return;
+        float x = bubbleLp.x + bubbleSize / 2f;
+        float y = bubbleLp.y + bubbleSize / 2f;
+        boolean armed = Math.hypot(x - dropCenterX, y - dropCenterY) < Ui.dp(this, 78);
+        if (armed == dropArmed) return;
+        dropArmed = armed;
+        dropTarget.setBackground(armed
+                ? Ui.rounded(Ui.BRICK, 22, this)
+                : Ui.outline(Ui.SURFACE, 0x552E2B27, 22, this));
+        dropTarget.setTextColor(armed ? Ui.PAPER : Ui.INK);
+        setDropTargetIcon(armed ? Ui.PAPER : Ui.INK);
+        dropTarget.animate().scaleX(armed ? 1.08f : 1f).scaleY(armed ? 1.08f : 1f)
+                .setDuration(140).start();
+        if (armed && bubble != null) Ui.haptic(bubble);
+    }
+
+    private void setDropTargetIcon(int tint) {
+        android.graphics.drawable.Drawable icon = getDrawable(R.drawable.ic_close);
+        if (icon == null) return;
+        icon.setTint(tint);
+        int size = Ui.dp(this, 14);
+        icon.setBounds(0, 0, size, size);
+        dropTarget.setCompoundDrawables(icon, null, null, null);
+        dropTarget.setCompoundDrawablePadding(Ui.dp(this, 6));
+    }
+
+    private void hideDropTarget() {
+        if (dropTarget == null) return;
+        try {
+            windowManager.removeView(dropTarget);
+        } catch (Exception ignored) {
+        }
+        dropTarget = null;
+        dropArmed = false;
+    }
+
     private void showCaption(String text) {
         if (destroyed || panelOpen || text == null || text.trim().isEmpty()) return;
         try {
@@ -514,7 +610,7 @@ public class BubbleService extends Service {
                 caption.setEllipsize(android.text.TextUtils.TruncateAt.END);
                 caption.setPadding(Ui.dp(this, 12), Ui.dp(this, 8),
                         Ui.dp(this, 12), Ui.dp(this, 8));
-                caption.setBackground(Ui.outline(0xEE141826, 0x33FFFFFF, 16, this));
+                caption.setBackground(Ui.outline(Ui.SURFACE, 0x552E2B27, 16, this));
                 caption.setElevation(Ui.dp(this, 8));
                 captionLp = new WindowManager.LayoutParams(
                         WindowManager.LayoutParams.WRAP_CONTENT,
@@ -1090,7 +1186,7 @@ public class BubbleService extends Service {
                 .setOnlyAlertOnce(true)
                 .setCategory(Notification.CATEGORY_SERVICE)
                 .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-                .setColor(Ui.VIOLET);
+                .setColor(Ui.TERRACOTTA);
         if (listening) {
             builder.addAction(new Notification.Action.Builder(
                     Icon.createWithResource(this, R.drawable.ic_stop),

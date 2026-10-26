@@ -9,9 +9,10 @@ import android.graphics.drawable.RippleDrawable;
 import android.content.res.ColorStateList;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.GestureDetector;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.animation.LinearInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -73,30 +74,33 @@ final class PanelView extends LinearLayout {
         setOrientation(VERTICAL);
         setPadding(Ui.dp(context, 18), Ui.dp(context, 15),
                 Ui.dp(context, 18), Ui.dp(context, 16));
-        GradientDrawable background = new GradientDrawable(
-                GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{0xF2161B2B, 0xF20B0D14});
-        background.setCornerRadius(Ui.dp(context, 28));
-        background.setStroke(Ui.dp(context, 1), 0x26FFFFFF);
-        setBackground(background);
+        setBackground(Ui.outline(Ui.SURFACE, 0x332E2B27, 28, context));
         setElevation(Ui.dp(context, 18));
 
         View accent = new View(context);
-        accent.setBackground(Ui.gradient(Ui.VIOLET, Ui.BLUE, 2, context));
+        accent.setBackground(Ui.rounded(Ui.TERRACOTTA, 2, context));
         addView(accent, new LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(context, 3)));
+
+        View grip = new View(context);
+        grip.setBackground(Ui.rounded(Ui.alpha(Ui.INK, 55), 2, context));
+        LayoutParams gripLp = new LayoutParams(Ui.dp(context, 42), Ui.dp(context, 4));
+        gripLp.gravity = Gravity.CENTER_HORIZONTAL;
+        gripLp.topMargin = Ui.dp(context, 8);
+        addView(grip, gripLp);
+        swipeToMinimize(grip);
 
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
         LayoutParams headerLp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        headerLp.topMargin = Ui.dp(context, 12);
+        headerLp.topMargin = Ui.dp(context, 10);
         addView(header, headerLp);
 
         FrameLayout avatar = new FrameLayout(context);
-        avatar.setBackground(shapeCircle(Ui.gradient(Ui.VIOLET, Ui.BLUE, 19, context)));
+        avatar.setBackground(shapeCircle(Ui.rounded(Ui.PENCIL, 19, context)));
         ImageView sparkle = new ImageView(context);
         sparkle.setImageResource(R.drawable.ic_sparkle);
-        sparkle.setColorFilter(Color.WHITE);
+        sparkle.setColorFilter(Ui.INK);
         FrameLayout.LayoutParams sparkleLp = new FrameLayout.LayoutParams(
                 Ui.dp(context, 19), Ui.dp(context, 19), Gravity.CENTER);
         avatar.addView(sparkle, sparkleLp);
@@ -113,21 +117,24 @@ final class PanelView extends LinearLayout {
         subtitle = Ui.text(context, "Ready", 11.5f, Ui.MUTED, false);
         titleCol.addView(subtitle);
 
-        ImageButton settings = Ui.icon(context, R.drawable.ic_settings, Ui.MUTED, 34f,
+        ImageButton settings = Ui.icon(context, R.drawable.ic_settings, Ui.INK_SOFT, 42f,
                 "Settings");
         settings.setOnClickListener(v -> listener.onSettings());
         header.addView(settings);
-        ImageButton hide = Ui.icon(context, R.drawable.ic_power, Ui.MUTED, 34f,
-                "Hide floating bubble");
-        hide.setOnClickListener(v -> listener.onHide());
-        header.addView(hide);
-        ImageButton close = Ui.icon(context, R.drawable.ic_chevron_down, Ui.MUTED, 34f,
-                "Collapse");
-        close.setOnClickListener(v -> listener.onClose());
+        ImageButton minimize = Ui.icon(context, R.drawable.ic_minimize, Ui.INK, 48f,
+                "Minimize card");
+        minimize.setOnClickListener(v -> listener.onClose());
+        header.addView(minimize);
+        ImageButton close = Ui.icon(context, R.drawable.ic_close, Ui.INK, 48f,
+                "Close Scribe");
+        close.setOnClickListener(v -> listener.onHide());
         header.addView(close);
 
+        swipeToMinimize(avatar);
+        swipeToMinimize(titleCol);
+
         View divider = new View(context);
-        divider.setBackgroundColor(0x14FFFFFF);
+        divider.setBackgroundColor(0x1A2E2B27);
         LayoutParams dividerLp = new LayoutParams(LayoutParams.MATCH_PARENT, Ui.dp(context, 1));
         dividerLp.topMargin = Ui.dp(context, 12);
         addView(divider, dividerLp);
@@ -142,6 +149,26 @@ final class PanelView extends LinearLayout {
                 Math.min(Ui.dp(context, 208), availableHeight - Ui.dp(context, 260)));
         LayoutParams scrollLp = new LayoutParams(LayoutParams.MATCH_PARENT, scrollHeight);
         addView(scroll, scrollLp);
+
+        GestureDetector minimizeFling = new GestureDetector(context,
+                new GestureDetector.SimpleOnGestureListener() {
+                    @Override public boolean onFling(MotionEvent e1, MotionEvent e2,
+                                                     float velocityX, float velocityY) {
+                        if (e1 == null || e2 == null) return false;
+                        float dy = e2.getRawY() - e1.getRawY();
+                        if (scroll.getScrollY() == 0 && dy > Ui.dp(context, 36)
+                                && velocityY > 900
+                                && Math.abs(velocityY) > Math.abs(velocityX) * 1.2f) {
+                            listener.onClose();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+        scroll.setOnTouchListener((v, event) -> {
+            minimizeFling.onTouchEvent(event);
+            return false;
+        });
 
         LinearLayout chat = new LinearLayout(context);
         chat.setOrientation(VERTICAL);
@@ -158,7 +185,7 @@ final class PanelView extends LinearLayout {
         draftView.setTextIsSelectable(false);
         draftView.setPadding(Ui.dp(context, 15), Ui.dp(context, 13),
                 Ui.dp(context, 15), Ui.dp(context, 13));
-        draftView.setBackground(Ui.outline(0x14FFFFFF, 0x1FFFFFFF, 20, context));
+        draftView.setBackground(Ui.outline(0xFFFFFDF7, 0x332E2B27, 20, context));
         draftView.setLineSpacing(Ui.dp(context, 4), 1.08f);
         LayoutParams draftLp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         draftLp.topMargin = Ui.dp(context, 10);
@@ -170,7 +197,7 @@ final class PanelView extends LinearLayout {
         statusRow.setGravity(Gravity.CENTER_VERTICAL);
         statusRow.setPadding(Ui.dp(context, 10), Ui.dp(context, 7),
                 Ui.dp(context, 10), Ui.dp(context, 7));
-        statusRow.setBackground(Ui.rounded(0x0FFFFFFF, 16, context));
+        statusRow.setBackground(Ui.rounded(Ui.SURFACE_ALT, 16, context));
         LayoutParams statusLp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         statusLp.topMargin = Ui.dp(context, 10);
         chat.addView(statusRow, statusLp);
@@ -222,11 +249,12 @@ final class PanelView extends LinearLayout {
 
         recordBtn = new ImageButton(context);
         recordBtn.setImageResource(R.drawable.ic_mic);
-        recordBtn.setColorFilter(Color.WHITE);
+        recordBtn.setColorFilter(Ui.PAPER);
         recordBtn.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        recordBtn.setPadding(Ui.dp(context, 16), Ui.dp(context, 16),
-                Ui.dp(context, 16), Ui.dp(context, 16));
-        recordBtn.setBackground(Ui.gradient(Ui.VIOLET, Ui.BLUE, 30, context));
+        recordBtn.setAdjustViewBounds(false);
+        recordBtn.setPadding(Ui.dp(context, 18), Ui.dp(context, 18),
+                Ui.dp(context, 18), Ui.dp(context, 18));
+        recordBtn.setBackground(Ui.rounded(Ui.INK, 30, context));
         recordBtn.setContentDescription("Start dictation");
         Ui.touchAnimation(recordBtn);
         recordBtn.setOnClickListener(v -> listener.onRecordToggle());
@@ -235,12 +263,12 @@ final class PanelView extends LinearLayout {
         commitBtn = new TextView(context);
         commitBtn.setText("Add to today’s note");
         commitBtn.setTextSize(13.5f);
-        commitBtn.setTextColor(0xFF07111C);
+        commitBtn.setTextColor(Ui.INK);
         commitBtn.setTypeface(android.graphics.Typeface.create("sans-serif-medium",
                 android.graphics.Typeface.NORMAL));
         commitBtn.setGravity(Gravity.CENTER);
         commitBtn.setPadding(Ui.dp(context, 12), 0, Ui.dp(context, 12), 0);
-        commitBtn.setBackground(Ui.gradient(Ui.MINT, Ui.BLUE, 26, context));
+        commitBtn.setBackground(Ui.rounded(Ui.PENCIL, 26, context));
         commitBtn.setOnClickListener(v -> {
             if (commitBtn.getTag() != null && Boolean.TRUE.equals(commitBtn.getTag())) {
                 listener.onSettings();
@@ -362,9 +390,7 @@ final class PanelView extends LinearLayout {
 
         recordBtn.setImageResource(listening ? R.drawable.ic_stop : R.drawable.ic_mic);
         recordBtn.setContentDescription(listening ? "Stop dictation" : "Start dictation");
-        recordBtn.setBackground(listening
-                ? Ui.gradient(Ui.PEACH, Ui.DANGER, 30, context)
-                : Ui.gradient(Ui.VIOLET, Ui.BLUE, 30, context));
+        recordBtn.setBackground(Ui.rounded(listening ? Ui.BRICK : Ui.INK, 30, context));
         setRecordPulse(listening);
     }
 
@@ -402,6 +428,38 @@ final class PanelView extends LinearLayout {
         super.onDetachedFromWindow();
     }
 
+    private void swipeToMinimize(View target) {
+        target.setOnTouchListener(new View.OnTouchListener() {
+            private float startX;
+            private float startY;
+
+            @Override public boolean onTouch(View view, MotionEvent event) {
+                switch (event.getActionMasked()) {
+                    case MotionEvent.ACTION_DOWN:
+                        startX = event.getRawX();
+                        startY = event.getRawY();
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        float dy = event.getRawY() - startY;
+                        if (dy > 0) view.setTranslationY(Math.min(dy, Ui.dp(context, 38)));
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        float movedY = event.getRawY() - startY;
+                        float movedX = Math.abs(event.getRawX() - startX);
+                        view.setTranslationY(0);
+                        if (movedY > Ui.dp(context, 52) && movedX < movedY) {
+                            listener.onClose();
+                        }
+                        return true;
+                    case MotionEvent.ACTION_CANCEL:
+                        view.setTranslationY(0);
+                        return true;
+                }
+                return false;
+            }
+        });
+    }
+
     private void toggleClearConfirm() {
         setClearConfirm(!confirmingClear);
     }
@@ -426,7 +484,7 @@ final class PanelView extends LinearLayout {
         v.setGravity(Gravity.CENTER);
         v.setPadding(Ui.dp(context, 8), Ui.dp(context, 8),
                 Ui.dp(context, 8), Ui.dp(context, 8));
-        v.setBackground(Ui.rounded(0x12FFFFFF, 18, context));
+        v.setBackground(Ui.rounded(Ui.SURFACE_ALT, 18, context));
         int size = Ui.dp(context, 14);
         Drawable icon = context.getDrawable(iconRes);
         icon.setTint(color);

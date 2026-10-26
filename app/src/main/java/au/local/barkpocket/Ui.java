@@ -17,17 +17,31 @@ import android.widget.TextView;
 
 /** Small programmatic styling helpers shared by the overlay and setup screen. */
 final class Ui {
-    static final int VIOLET = Color.rgb(139, 92, 246);
-    static final int BLUE = Color.rgb(56, 189, 248);
-    static final int MINT = Color.rgb(110, 231, 183);
-    static final int PEACH = Color.rgb(253, 186, 116);
-    static final int DANGER = Color.rgb(251, 113, 133);
-    static final int TEXT = Color.rgb(245, 247, 255);
-    static final int MUTED = Color.rgb(152, 162, 184);
-    static final int SURFACE = Color.rgb(20, 24, 38);
-    static final int SURFACE_2 = Color.rgb(28, 34, 52);
-    static final int BG = Color.rgb(7, 8, 13);
-    static final int BG_2 = Color.rgb(16, 20, 33);
+    // Paper-and-pencil palette: warm paper, graphite ink, pencil yellow,
+    // a little terracotta and sage. Deliberately nearly gradient-free.
+    static final int PAPER = Color.rgb(244, 240, 230);
+    static final int PAPER_DEEP = Color.rgb(233, 226, 212);
+    static final int SURFACE = Color.rgb(251, 248, 241);
+    static final int SURFACE_ALT = Color.rgb(237, 230, 216);
+    static final int INK = Color.rgb(46, 43, 39);
+    static final int INK_SOFT = Color.rgb(76, 71, 64);
+    static final int MUTED = Color.rgb(122, 116, 106);
+    static final int PENCIL = Color.rgb(228, 195, 106);
+    static final int TERRACOTTA = Color.rgb(158, 86, 56);
+    static final int SAGE = Color.rgb(95, 125, 91);
+    static final int OCHRE = Color.rgb(169, 120, 37);
+    static final int BRICK = Color.rgb(162, 68, 50);
+
+    // Historical names kept for call sites; all map onto the paper palette.
+    static final int VIOLET = INK;
+    static final int BLUE = TERRACOTTA;
+    static final int MINT = SAGE;
+    static final int PEACH = OCHRE;
+    static final int DANGER = BRICK;
+    static final int TEXT = INK;
+    static final int SURFACE_2 = SURFACE_ALT;
+    static final int BG = PAPER;
+    static final int BG_2 = PAPER_DEEP;
 
     private Ui() {
     }
@@ -43,20 +57,6 @@ final class Ui {
         return d;
     }
 
-    static GradientDrawable gradient(int start, int end, float radiusDp, Context context) {
-        GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{start, end});
-        d.setCornerRadius(dp(context, radiusDp));
-        return d;
-    }
-
-    static GradientDrawable gradientVertical(int start, int end, float radiusDp, Context context) {
-        GradientDrawable d = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
-                new int[]{start, end});
-        d.setCornerRadius(dp(context, radiusDp));
-        return d;
-    }
-
     static GradientDrawable outline(int fill, int stroke, float radiusDp, Context context) {
         GradientDrawable d = rounded(fill, radiusDp, context);
         d.setStroke(dp(context, 1), stroke);
@@ -65,7 +65,7 @@ final class Ui {
 
     static RippleDrawable ripple(int radiusDp, Context context) {
         GradientDrawable content = rounded(Color.TRANSPARENT, radiusDp, context);
-        return new RippleDrawable(ColorStateList.valueOf(0x33FFFFFF), content, null);
+        return new RippleDrawable(ColorStateList.valueOf(0x222E2B27), content, null);
     }
 
     static TextView text(Context context, CharSequence value, float sizeSp, int color,

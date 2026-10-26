@@ -6,26 +6,26 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-- **Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40273600954>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
 > `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
 >
-> **0.3.1 bugfix:** opening setup no longer crashes on the missing window decor,
-> and a card-expansion failure is now caught, logged and shown instead of
-> killing the bubble. Screen metrics and panel width are clamped defensively.
+> **0.4.0:** warm paper-and-graphite palette with almost no gradients, Markdown
+> daily notes with `## HH:mm` headings, a proper square stop glyph, bigger
+> minimize/close controls, swipe-down-to-minimize and drag-the-orb-to-bottom to
+> dismiss the bubble. The 0.3.1 launch/expansion crash fixes are retained.
 
 ## Delivery status
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.3.1-debug.apk` — **138,721 bytes**
+- **APK:** `dist/Scribe-0.4.0-debug.apk` — **142,035 bytes**
 - **SHA-256:**
-  `f7af8507198f59f29814dd025b72a71614ce74570e86258031d6d4e6f222cfb4`
-- Android lint: **0 errors** (33 warnings, mostly draw-time allocations and
-  hardcoded localization strings).
+  `043247355c1c89e1f491edf0e9eed21743a0319c2c1194a09ac01a9d3b811efb`
+- Android lint: **0 errors** (26 warnings, mostly hardcoded localization strings
+  and the required adaptive-icon folder).
 - APK integrity, manifest components and signature were checked with
   `apksigner`, `aapt2` and `unzip -t`; see [VALIDATION.txt](VALIDATION.txt).
 - **Not device-tested.** The floating overlay, microphone foreground service,
@@ -33,13 +33,14 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
   on the S24. No phone or KVM-capable emulator was available here.
 - Host-side smoke tests passed for setup-activity launch, panel
   construct/render/measure/add, and foreground-service start + panel expansion.
-  They found the 0.3 launch crash fixed in 0.3.1.
+  They found the 0.3 launch crash fixed in 0.3.1 and exercised the new paper
+  card in 0.4.0.
 - Debug-signed only. A later build from another machine/runner can use a
   different debug key; switching builds may require uninstalling first.
 
 ## Install
 
-1. Copy `Scribe-0.3.1-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.4.0-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -52,9 +53,18 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
    **Add to today’s note**. The orb’s dot means a draft is waiting.
 
 Long-press the orb to start or stop dictation without opening the card. Drag it
-to move it; it snaps to the nearest side. The notification also has Stop / Add
-to note / Hide actions. A **Scribe settings** launcher shortcut is available
+to move it; it snaps to the nearest side. To dismiss the bubble, drag the orb
+into the **Close** target at the bottom centre. The notification also has Stop /
+Add to note / Hide actions. A **Scribe settings** launcher shortcut is available
 from the app icon long-press menu.
+
+When the card is open:
+
+- **Swipe down** on the grip/title at the top, or fling down in the chat while it
+  is at the top, to minimise back to the orb.
+- The larger **minus** button minimises; the larger **X** closes the bubble and
+  its foreground service.
+- The settings, minimise and close buttons are 42–48 dp touch targets.
 
 ## How the dictation flow works
 
@@ -80,15 +90,29 @@ from the app icon long-press menu.
 Committed text goes to:
 
 ```text
-Scribe_YYYY-MM-DD.txt
+Scribe_YYYY-MM-DD.md
 ```
 
 in the chosen folder, using the phone’s local date. The app finds an existing
-file with that name and appends a paragraph; it does not create a new note for
-each session. A blank line separates commits.
+Markdown file with that name and appends a section; it does not create a new
+note for each session.
 
-Each commit writes plain UTF-8 text with no header, timestamp, Markdown or
-metadata. The file is not continuously mirrored while recording.
+Each commit is appended as a Markdown section with a 24-hour local time:
+
+```markdown
+## 17:09
+
+The transcript for that session.
+
+## 17:42
+
+The next transcript.
+```
+
+The time is exactly `HH:mm` — no seconds, AM/PM, date or timezone. The date is
+only in the file name. Sections are separated by a blank line. Existing
+`Scribe_*.txt` notes from older versions are left untouched; new commits start a
+`.md` file. The file is not continuously mirrored while recording.
 
 ## Permissions and why Scribe needs them
 
@@ -107,7 +131,8 @@ restricts starting a new microphone foreground service from a background
 overlay tap. The service is idle (not recording) until you press the mic, and
 the system privacy indicator only appears while `AudioRecord` is active. The
 ongoing notification is the trade-off for a persistent floating button; use its
-Hide action or the card’s power button to stop it.
+Hide action, the card’s X button, or drag the orb to the Close target to stop
+it.
 
 Scribe does not start at boot. Opening the app after setup shows the bubble and
 returns to what you were doing. Opening it again while the bubble is running
@@ -183,6 +208,22 @@ The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
 writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
 artifact.
 
+## Changes in 0.4.0
+
+- Added a paper-and-pencil visual language: warm paper, graphite ink, pencil
+  yellow, terracotta and sage; the dot-grid/ruled background replaced the
+  animated neon aurora, and all deliberate gradients were removed from the
+  panels, buttons and orb.
+- Daily notes are now Markdown (`.md`) with one `## HH:mm` section per commit,
+  using 24-hour local time only.
+- Replaced the stretched stop glyph with a true square and larger, square
+  content padding.
+- Enlarged the card’s minimise and close controls, added a minimise (minus)
+  button distinct from close (X), and added swipe-down/header-grip minimise.
+- Added a bottom-centre **Close** drop target: drag the orb into it to remove
+  the bubble and stop its service.
+- Kept the 0.3.1 decor-crash fix and panel-failure isolation.
+
 ## Changes in 0.3.1
 
 - Fixed the startup `NullPointerException` from calling
@@ -201,13 +242,13 @@ artifact.
 - Opening the configured app now summons the bubble instead of a separate app
   screen; the settings/onboarding screen appears only when needed.
 - Removed Dictate/Dictate + document modes. One record button, one commit.
-- Commit now appends to a **single daily file**, `Scribe_YYYY-MM-DD.txt`.
+- Commit now appends to a **single daily file** (daily filename described above).
 - Raised the silence boundary from 700 ms to a configurable 2/4/6 s (default
   4 s) and the phrase cap from 13 s to 30 s; added pause-aware joining, a
   pause-length setting and an editable draft.
 - Added a live waveform, pulsing/recording orb, aurora setup background, spring
   panel animation, caption pill, haptics, adaptive/monochrome icons and a
-  cohesive violet/cyan/mint palette.
+  cohesive palette.
 - Added overlay permission onboarding, a foreground-service bubble, quick
   settings tile and settings/draft editor activities.
 - Kept private drafts/audio out of backup and device transfer.

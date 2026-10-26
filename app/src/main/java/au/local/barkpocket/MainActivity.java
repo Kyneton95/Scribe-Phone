@@ -157,7 +157,9 @@ public class MainActivity extends Activity {
             window.setDecorFitsSystemWindows(false);
             android.view.WindowInsetsController controller = window.getInsetsController();
             if (controller != null) {
-                controller.setSystemBarsAppearance(0,
+                controller.setSystemBarsAppearance(
+                        android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                                | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
                         android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
                                 | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
             }
@@ -167,7 +169,7 @@ public class MainActivity extends Activity {
 
     private void buildUi() {
         FrameLayout root = new FrameLayout(this);
-        root.addView(new AuroraView(this),
+        root.addView(new PaperView(this),
                 new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT,
                         FrameLayout.LayoutParams.MATCH_PARENT));
 
@@ -317,13 +319,13 @@ public class MainActivity extends Activity {
         startButton = new TextView(this);
         startButton.setText("Start floating bubble");
         startButton.setTextSize(15.5f);
-        startButton.setTextColor(0xFF06111A);
+        startButton.setTextColor(Ui.PAPER);
         startButton.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         startButton.setGravity(Gravity.CENTER);
-        startButton.setBackground(Ui.gradient(Ui.MINT, Ui.BLUE, 28, this));
+        startButton.setBackground(Ui.rounded(Ui.INK, 28, this));
         startButton.setCompoundDrawablePadding(Ui.dp(this, 8));
         Drawable spark = getDrawable(R.drawable.ic_sparkle);
-        spark.setTint(0xFF06111A);
+        spark.setTint(Ui.PAPER);
         spark.setBounds(0, 0, Ui.dp(this, 16), Ui.dp(this, 16));
         startButton.setCompoundDrawables(spark, null, null, null);
         startButton.setOnClickListener(v -> {
@@ -364,7 +366,7 @@ public class MainActivity extends Activity {
         privacyLp.topMargin = Ui.dp(this, 10);
         body.addView(privacy, privacyLp);
 
-        TextView github = Ui.text(this, "View source on GitHub", 11.5f, Ui.BLUE, true);
+        TextView github = Ui.text(this, "View source on GitHub", 11.5f, Ui.TERRACOTTA, true);
         github.setGravity(Gravity.CENTER);
         github.setPadding(0, Ui.dp(this, 16), 0, Ui.dp(this, 4));
         github.setOnClickListener(v -> openGitHub());
@@ -377,10 +379,10 @@ public class MainActivity extends Activity {
         brand.setGravity(Gravity.CENTER_VERTICAL);
 
         FrameLayout mark = new FrameLayout(this);
-        mark.setBackground(shapeCircle(Ui.gradient(Ui.VIOLET, Ui.BLUE, 23, this)));
+        mark.setBackground(shapeCircle(Ui.rounded(Ui.PENCIL, 23, this)));
         ImageView sparkle = new ImageView(this);
         sparkle.setImageResource(R.drawable.ic_sparkle);
-        sparkle.setColorFilter(Color.WHITE);
+        sparkle.setColorFilter(Ui.INK);
         mark.addView(sparkle, new FrameLayout.LayoutParams(
                 Ui.dp(this, 24), Ui.dp(this, 24), Gravity.CENTER));
         brand.addView(mark, new LinearLayout.LayoutParams(Ui.dp(this, 46), Ui.dp(this, 46)));
@@ -409,7 +411,7 @@ public class MainActivity extends Activity {
         row.setPadding(Ui.dp(this, 4), Ui.dp(this, 8), Ui.dp(this, 4), Ui.dp(this, 8));
 
         FrameLayout badge = new FrameLayout(this);
-        badge.setBackground(shapeCircle(Ui.rounded(0x16FFFFFF, 18, this)));
+        badge.setBackground(shapeCircle(Ui.rounded(Ui.SURFACE_ALT, 18, this)));
         ImageView icon = new ImageView(this);
         icon.setImageResource(iconRes);
         icon.setColorFilter(Ui.MUTED);
@@ -464,7 +466,7 @@ public class MainActivity extends Activity {
         card.setOrientation(LinearLayout.VERTICAL);
         card.setPadding(Ui.dp(this, 13), Ui.dp(this, 10),
                 Ui.dp(this, 13), Ui.dp(this, 10));
-        card.setBackground(Ui.outline(0xC8141826, 0x1FFFFFFF, 24, this));
+        card.setBackground(Ui.outline(Ui.SURFACE, 0x332E2B27, 24, this));
         return card;
     }
 
@@ -482,7 +484,7 @@ public class MainActivity extends Activity {
 
     private View divider() {
         View v = new View(this);
-        v.setBackgroundColor(0x12FFFFFF);
+        v.setBackgroundColor(0x1A2E2B27);
         return v;
     }
 
@@ -501,7 +503,7 @@ public class MainActivity extends Activity {
         edit.setHintTextColor(Ui.MUTED);
         edit.setPadding(Ui.dp(this, 13), Ui.dp(this, 11),
                 Ui.dp(this, 13), Ui.dp(this, 11));
-        edit.setBackground(Ui.outline(0x12FFFFFF, 0x1FFFFFFF, 14, this));
+        edit.setBackground(Ui.outline(0xFFFFFDF7, 0x332E2B27, 14, this));
         edit.setInputType(password
                 ? InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD
                 : InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
@@ -663,10 +665,10 @@ public class MainActivity extends Activity {
             TextView pill = pausePills[i];
             if (pill == null) continue;
             boolean on = PAUSE_VALUES[i] == selected;
-            pill.setTextColor(on ? 0xFF06111A : Ui.MUTED);
+            pill.setTextColor(on ? Ui.PAPER : Ui.INK_SOFT);
             pill.setBackground(on
-                    ? Ui.gradient(Ui.MINT, Ui.BLUE, 14, this)
-                    : Ui.rounded(0x12FFFFFF, 14, this));
+                    ? Ui.rounded(Ui.INK, 14, this)
+                    : Ui.rounded(Ui.SURFACE_ALT, 14, this));
             pill.setTypeface(Typeface.create(on ? "sans-serif-medium" : "sans-serif",
                     Typeface.NORMAL));
         }

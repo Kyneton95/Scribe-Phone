@@ -1,4 +1,4 @@
-VALIDATION - Scribe floating dictation 0.3.1
+VALIDATION - Scribe floating dictation 0.4.0
 Date: 2026-10-26 (Australia/Melbourne)
 
 Environment
@@ -11,23 +11,22 @@ Environment
   targetSdk    35
   Package      au.local.barkpocket
   Label        Scribe
-  Version      0.3.1-floating (versionCode 4)
+  Version      0.4.0-floating (versionCode 5)
 
 PASS: ./gradlew :app:assembleDebug BUILD SUCCESSFUL.
-PASS: ./gradlew :app:lintDebug 0 errors, 33 warnings.
-      Warnings are draw-time allocations, hardcoded UI strings, unused
-      colour resources, the required v26 adaptive-icon folder, a long vector
-      path and a programmatic custom-view constructor. No warning is a
-      permission, manifest, foreground-service or API-level failure.
+PASS: ./gradlew :app:lintDebug 0 errors, 26 warnings.
+      Warnings are mostly hardcoded UI strings, unused resources and the
+      required v26 adaptive-icon folder. No permission, manifest,
+      foreground-service or API-level errors.
 PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (138,721 bytes).
+      (142,035 bytes).
 PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
       CN=Android Debug, SHA-256
       6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
       This is the local debug key, not a stable release key.
 PASS: unzip -t: no compressed-data errors.
-PASS: aapt2 badging: label "Scribe", versionCode 4, versionName
-      0.3.1-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
+PASS: aapt2 badging: label "Scribe", versionCode 5, versionName
+      0.4.0-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
       Permissions: INTERNET, RECORD_AUDIO, POST_NOTIFICATIONS,
       FOREGROUND_SERVICE, FOREGROUND_SERVICE_MICROPHONE, WAKE_LOCK,
       SYSTEM_ALERT_WINDOW.
@@ -36,66 +35,53 @@ PASS: aapt2 manifest dump: BubbleService declared with
       launcher with shortcuts; DraftEditActivity exported=false; VoiceTile
       bound by BIND_QUICK_SETTINGS_TILE; allowBackup=false;
       dataExtractionRules present; usesCleartextTraffic=true.
-PASS: Transcript join test (12 cases) on the JVM:
+PASS: Transcript join test (12 cases) on the JVM, including:
       - "I was thinking." + "about the plan." -> "I was thinking about the plan."
       - "I was thinking." + "And then we left." -> "I was thinking, and then we left."
       - "That is done." + "Next, open the file." -> kept the full stop.
-      - "This is" + "fine." -> "This is fine."
-      - empty + "Hello." -> "Hello."
-      - "One," + "two." -> "One, two."
-      - "Really?" + "and then?" -> "Really, and then?"
-      - "So that is it." + "But why?" -> "So that is it, but why?"
       - "I think." + "I know." -> kept the full stop.
-      - lowercase continuation, trailing punctuation and repeated separators.
-PASS: DailyNotes payload test (6 cases) on the JVM:
-      - filename Scribe_2026-10-26.txt
-      - first commit writes "Hello world.\n"
-      - later commit gets exactly one blank-line separator for no newline,
-        one trailing newline or an existing blank line.
+      - lowercase continuation and connector joining.
+PASS: DailyNotes Markdown/time test (6 cases) on the JVM:
+      - filename Scribe_2026-10-26.md
+      - first commit: "## 09:05\n\nHello world.\n"
+      - each later commit has exactly one blank-line separator and its own
+        HH:mm heading; 23:59 and 00:00 formats are accepted.
       - whitespace is normalised.
-PASS: Code review of the foreground-service start path: MainActivity only
-      starts the microphone service after RECORD_AUDIO, overlay permission,
-      endpoint and folder are present; all service UI mutations are marshalled
-      to the main thread; pending uploads are re-kicked if a phrase lands while
-      the upload loop is releasing; onDestroy resets active/busy flags.
-
-PASS: GitHub Actions workflow run 40273600954 completed successfully on
-      2026-10-26 with build + lint, checksum and artifact upload.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40273600954
-      CI artifact: 138,717 bytes, SHA-256
-      e39ca943bb8aa333bd544f022821fb3462858fc2cf2db867a762b57b35072f17
-      (built at commit 75b5e5f; the runner generated its own debug key, so its
-      certificate differs from the local hand-off APK).
-
 PASS: Host-side Robolectric smoke tests (temporary harness, removed from the
-      shipped source):
-      - MainActivity setup launch initially failed with
-        NullPointerException at MainActivity.edgeToEdge line 155 because
-        PhoneWindow.getInsetsController() dereferenced a null decor. After
-        forcing window.getDecorView() first, the activity launched successfully.
-      - PanelView constructed, rendered, measured (900x514 in the test), added
-        to a simulated WindowManager and removed without exception.
-      - BubbleService started, reported ready and accepted SHOW_PANEL in the
-        same simulated environment.
-      DraftEditActivity received the same decor fix.
+      shipped source, SDK 35):
+      - MainActivity launched the new paper setup screen successfully.
+      - PanelView constructed, rendered with a Markdown filename, measured
+        1000x524, added to a simulated WindowManager and removed.
+      The 0.3.1 setup/editor decor crash fix remains in place.
+PASS: Code review of the 0.4.0 interaction changes:
+      - stop icon is a true 10x10 square inside a square-padded 60dp button;
+      - panel header has separate 48dp minimise (minus) and close (X) controls;
+      - swipe-down on the grip/avatar/title and a downward fling in the chat at
+        scrollY=0 minimise the card;
+      - dragging the orb shows a bottom-centre Close target, arms within 78dp,
+        and stops the bubble/service on drop;
+      - panel failures are caught, logged and toasted without killing the
+        microphone service;
+      - all card UI mutations are marshalled to the main thread.
 
 Local hand-off APK
-  Path      dist/Scribe-0.3.1-debug.apk
-  Size      138,721 bytes
-  SHA-256   f7af8507198f59f29814dd025b72a71614ce74570e86258031d6d4e6f222cfb4
+  Path      dist/Scribe-0.4.0-debug.apk
+  Size      142,035 bytes
+  SHA-256   043247355c1c89e1f491edf0e9eed21743a0319c2c1194a09ac01a9d3b811efb
   Signature debug, v2 scheme
 
 NOT PERFORMED
   - Installation or launch on a physical phone or emulator (no device attached;
     no /dev/kvm for an accelerated emulator).
-  - Floating-overlay permission flow, bubble drag/snap and panel touch/focus.
-  - Microphone foreground service on a real Samsung/One UI build.
-  - System notification actions, lock screen and screen-off recording.
+  - Real overlay permission flow, Samsung/One UI overlay drag, drop-to-close and
+    swipe-down gestures on a device.
+  - Microphone foreground service, notification, lock screen, screen-off.
   - Real LAN request, server errors/retry, token path and 30 s server latency.
-  - SAF daily-file append against the actual Syncthing folder/provider.
-  - Overlay revocation, folder permission loss, calls, rotation and process kill.
+  - SAF Markdown append against the actual Syncthing folder/provider.
+  - Overlay revocation, folder permission loss, calls, rotation, process kill.
+  - GitHub Actions execution of the 0.4.0 workflow (first run after push).
   - Stable release signing.
 
-This is a compiled, linted, debug-signed prototype with static/manifest and
-host-side logic verification. Device and end-to-end server tests are required
-before relying on it; see README.md for the checklist.
+This is a compiled, linted, debug-signed prototype with static/manifest,
+host-side UI and text-format verification. Device and end-to-end server tests
+are required before relying on it; see README.md for the checklist.

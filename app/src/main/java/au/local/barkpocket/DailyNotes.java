@@ -13,12 +13,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 /** Appends each committed draft to one plain-text file per local day. */
 final class DailyNotes {
     private static final int MAX_EXISTING_BYTES = 1024 * 1024;
     private static final DateTimeFormatter DATE = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     private DailyNotes() {
     }
@@ -28,7 +30,7 @@ final class DailyNotes {
     }
 
     static String fileName(LocalDate date) {
-        return "Scribe_" + date.format(DATE) + ".txt";
+        return "Scribe_" + date.format(DATE) + ".md";
     }
 
     static String append(Context context, String treeString, String text) throws Exception {
@@ -63,7 +65,8 @@ final class DailyNotes {
         }
 
         String existing = readExisting(resolver, document);
-        String payload = payloadFor(existing, trimmed);
+        String payload = payloadFor(existing,
+                LocalTime.now().format(TIME), trimmed);
         try (OutputStream out = resolver.openOutputStream(document, "wa")) {
             if (out == null) throw new IOException("Could not open today's note for writing.");
             out.write(payload.getBytes(StandardCharsets.UTF_8));
@@ -108,13 +111,14 @@ final class DailyNotes {
     }
 
     /** Package-private for the JVM text test. */
-    static String payloadFor(String existing, String text) {
+    static String payloadFor(String existing, String time, String text) {
         String trimmed = Transcript.normalize(text);
         if (trimmed.isEmpty()) return "";
-        if (existing == null || existing.isEmpty()) return trimmed + "\n";
-        if (existing.endsWith("\n\n")) return trimmed + "\n";
-        if (existing.endsWith("\n")) return "\n" + trimmed + "\n";
-        return "\n\n" + trimmed + "\n";
+        String entry = "## " + time + "\n\n" + trimmed + "\n";
+        if (existing == null || existing.isEmpty()) return entry;
+        if (existing.endsWith("\n\n")) return entry;
+        if (existing.endsWith("\n")) return "\n" + entry;
+        return "\n\n" + entry;
     }
 
     private static Uri findDocument(ContentResolver resolver, Uri tree, String name) {

@@ -3,9 +3,7 @@ package au.local.barkpocket;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.LinearGradient;
 import android.graphics.Paint;
-import android.graphics.Shader;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
@@ -62,8 +60,8 @@ final class WaveformView extends View {
         float center = h / 2f;
         float max = h * 0.42f;
 
-        paint.setShader(new LinearGradient(0, 0, w, 0,
-                new int[]{Ui.VIOLET, Ui.BLUE, Ui.MINT}, null, Shader.TileMode.CLAMP));
+        paint.setShader(null);
+        paint.setColor(active ? Ui.TERRACOTTA : Ui.MUTED);
         for (int i = 0; i < BARS; i++) {
             float energy = active
                     ? 0.35f + 0.65f * (0.5f + 0.5f * (float) Math.sin(phase + i * 0.95f))

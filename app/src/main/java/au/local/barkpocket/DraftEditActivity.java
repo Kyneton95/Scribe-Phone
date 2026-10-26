@@ -33,7 +33,9 @@ public class DraftEditActivity extends Activity {
         window.setDecorFitsSystemWindows(false);
         android.view.WindowInsetsController controller = window.getInsetsController();
         if (controller != null) {
-            controller.setSystemBarsAppearance(0,
+            controller.setSystemBarsAppearance(
+                    android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                            | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
                     android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
                             | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS);
         }
@@ -44,7 +46,7 @@ public class DraftEditActivity extends Activity {
 
     private void build() {
         FrameLayout root = new FrameLayout(this);
-        root.addView(new AuroraView(this), new FrameLayout.LayoutParams(
+        root.addView(new PaperView(this), new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
 
         ScrollView scroll = new ScrollView(this);
@@ -93,12 +95,12 @@ public class DraftEditActivity extends Activity {
         TextView save = new TextView(this);
         save.setText("Save");
         save.setTextSize(13.5f);
-        save.setTextColor(0xFF06111A);
+        save.setTextColor(Ui.PAPER);
         save.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
         save.setGravity(Gravity.CENTER);
         save.setPadding(Ui.dp(this, 22), Ui.dp(this, 11),
                 Ui.dp(this, 22), Ui.dp(this, 11));
-        save.setBackground(Ui.gradient(Ui.MINT, Ui.BLUE, 20, this));
+        save.setBackground(Ui.rounded(Ui.INK, 20, this));
         save.setOnClickListener(v -> save());
         Ui.touchAnimation(save);
         header.addView(save);
@@ -126,7 +128,7 @@ public class DraftEditActivity extends Activity {
         editor.setMinLines(10);
         editor.setPadding(Ui.dp(this, 16), Ui.dp(this, 15),
                 Ui.dp(this, 16), Ui.dp(this, 15));
-        editor.setBackground(Ui.outline(0xC8141826, 0x1FFFFFFF, 22, this));
+        editor.setBackground(Ui.outline(0xFFFFFDF7, 0x332E2B27, 22, this));
         LinearLayout.LayoutParams editorLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         editorLp.topMargin = Ui.dp(this, 10);
