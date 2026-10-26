@@ -47,6 +47,14 @@ PASS: DailyNotes Markdown/time test (6 cases) on the JVM:
       - each later commit has exactly one blank-line separator and its own
         HH:mm heading; 23:59 and 00:00 formats are accepted.
       - whitespace is normalised.
+PASS: GitHub Actions workflow run 40278995525 completed successfully on
+      2026-10-26 with build + lint, checksum and artifact upload.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40278995525
+      CI artifact: 142,027 bytes, SHA-256
+      e78c6f5b135308fc34671782bcc25ae4d8386044b57c899ce83cd61815f4d626
+      (built at commit 1e3c828; the runner generated its own debug key, so its
+      certificate differs from the local hand-off APK).
+
 PASS: Host-side Robolectric smoke tests (temporary harness, removed from the
       shipped source, SDK 35):
       - MainActivity launched the new paper setup screen successfully.
@@ -79,7 +87,6 @@ NOT PERFORMED
   - Real LAN request, server errors/retry, token path and 30 s server latency.
   - SAF Markdown append against the actual Syncthing folder/provider.
   - Overlay revocation, folder permission loss, calls, rotation, process kill.
-  - GitHub Actions execution of the 0.4.0 workflow (first run after push).
   - Stable release signing.
 
 This is a compiled, linted, debug-signed prototype with static/manifest,
