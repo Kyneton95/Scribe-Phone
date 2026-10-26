@@ -59,6 +59,14 @@ PASS: Code review of the foreground-service start path: MainActivity only
       to the main thread; pending uploads are re-kicked if a phrase lands while
       the upload loop is releasing; onDestroy resets active/busy flags.
 
+PASS: GitHub Actions workflow run 40273600954 completed successfully on
+      2026-10-26 with build + lint, checksum and artifact upload.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40273600954
+      CI artifact: 138,717 bytes, SHA-256
+      e39ca943bb8aa333bd544f022821fb3462858fc2cf2db867a762b57b35072f17
+      (built at commit 75b5e5f; the runner generated its own debug key, so its
+      certificate differs from the local hand-off APK).
+
 PASS: Host-side Robolectric smoke tests (temporary harness, removed from the
       shipped source):
       - MainActivity setup launch initially failed with
@@ -86,7 +94,6 @@ NOT PERFORMED
   - Real LAN request, server errors/retry, token path and 30 s server latency.
   - SAF daily-file append against the actual Syncthing folder/provider.
   - Overlay revocation, folder permission loss, calls, rotation and process kill.
-  - GitHub Actions execution of the 0.3.1 workflow (first run after push).
   - Stable release signing.
 
 This is a compiled, linted, debug-signed prototype with static/manifest and
