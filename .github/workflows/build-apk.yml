@@ -18,10 +18,13 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - uses: android-actions/setup-android@v3
+      # GitHub's Ubuntu image already contains the Android SDK. Do not use
+      # android-actions/setup-android@v3 here: it tries to install the removed
+      # "tools" package and fails before the build starts.
       - name: Install SDK 35
         run: |
-          yes | sdkmanager --licenses >/dev/null
+          echo "ANDROID_HOME=${ANDROID_HOME:-<unset>}"
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - name: Build debug APK
