@@ -59,13 +59,13 @@ PASS: Code review of the foreground-service start path: MainActivity only
       to the main thread; pending uploads are re-kicked if a phrase lands while
       the upload loop is releasing; onDestroy resets active/busy flags.
 
-PASS: GitHub Actions workflow run 40271511134 completed successfully on
+PASS: GitHub Actions workflow run 40271826607 completed successfully on
       2026-10-26 with the new build + lint step. The artifact contained the APK
       and SHA-256 file.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40271511134
-      CI artifact: 137,141 bytes, SHA-256
-      ec733460e1094d88572b4c49bbfe09cfe8bac604647e53939e50e1c5173a26a9
-      (built at commit f92cde6; the runner generated its own debug key, so the
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40271826607
+      CI artifact: 137,293 bytes, SHA-256
+      8205671d545fc385e93a52fc0eb4c545004bb8494a0791028475606284fe0193
+      (built at commit ec38b81; the runner generated its own debug key, so the
       certificate differs from the local hand-off APK).
 
 Local hand-off APK

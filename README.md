@@ -6,7 +6,7 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-**Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40271511134>
+**Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40271826607>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
