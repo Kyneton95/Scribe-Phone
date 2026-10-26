@@ -1,0 +1,56 @@
+VALIDATION - Bark Pocket prototype 0.2
+Date: 2026-10-26 (Australia/Melbourne)
+
+Environment
+  JDK          Temurin 17.0.21+9
+  Gradle       8.9 (committed wrapper)
+  AGP          8.7.3
+  compileSdk   35 (Android 15)
+  buildTools   35.0.0 (pinned in app/build.gradle)
+  minSdk       34 (Android 14)
+  targetSdk    35
+  Package      au.local.barkpocket
+  Version      0.2-prototype (versionCode 2)
+
+PASS: ./gradlew :app:assembleDebug completed with BUILD SUCCESSFUL.
+PASS: ./gradlew :app:lintDebug completed with 0 errors, 5 warnings.
+      Warnings: mipmap-anydpi-v26 folder qualifier and hardcoded UI text;
+      none of them is a build or runtime blocker.
+PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
+      (57,513 bytes).
+PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
+      CN=Android Debug, SHA-256
+      6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
+      This is the local debug key, not a stable release key.
+PASS: unzip -t: no compressed-data errors.
+PASS: aapt2 badging: label "Bark Pocket", versionCode 2,
+      versionName 0.2-prototype, minSdk 34, targetSdk 35, adaptive launcher
+      icon present, expected permissions present.
+PASS: Manifest dump: foregroundServiceType = microphone|dataSync
+      (0x81), allowBackup=false, dataExtractionRules present,
+      usesCleartextTraffic=true (documented LAN-only risk).
+PASS: JVM WAV writer test (Wav.java compiled and executed independently):
+      mono, signed 16-bit PCM, 16,000 Hz, exactly 16,000 frames = 1.000 s,
+      RIFF size field 32,036, file size 32,044 bytes.
+PASS: Ordered pending queue, persisted acknowledgements and plain UTF-8
+      export logic reviewed after the 0.2 changes.
+PASS: Endpoint contract remains multipart file -> JSON {"text": "..."}.
+
+Local hand-off APK
+  Path      dist/BarkPocket-0.2-debug.apk
+  Size      57,513 bytes
+  SHA-256   2c5839334f7818f3756d0b1630d3455e415451ff6b6b7712aeaa4a419d6e20a7
+  Signature debug, v2 scheme
+
+NOT PERFORMED
+  - Installation or launch on a physical phone or emulator.
+  - S24 microphone, notification, lock-screen, battery and rotation behaviour.
+  - Real LAN server request, HTTP error/retry path, token path.
+  - Syncthing folder creation, sync and permission-loss recovery.
+  - Airplane-mode, call-interruption, process-kill and screen-off tests.
+  - GitHub Actions execution (first run happens after the initial push).
+  - Stable release signing.
+
+This artifact is a compiled, debug-signed prototype APK with static/manifest
+verification and a native build. Device and end-to-end server tests are still
+required; see README.md for the checklist and known limitations.

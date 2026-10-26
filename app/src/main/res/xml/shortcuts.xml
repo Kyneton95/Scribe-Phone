@@ -1,0 +1,8 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="dictate" android:shortcutShortLabel="@string/shortcut_dictate" android:icon="@android:drawable/ic_btn_speak_now">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="au.local.barkpocket" android:targetClass="au.local.barkpocket.MainActivity"><extra android:name="mode" android:value="dictate" /></intent>
+    </shortcut>
+    <shortcut android:shortcutId="document" android:shortcutShortLabel="@string/shortcut_document" android:icon="@android:drawable/ic_menu_save">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="au.local.barkpocket" android:targetClass="au.local.barkpocket.MainActivity"><extra android:name="mode" android:value="document" /></intent>
+    </shortcut>
+</shortcuts>

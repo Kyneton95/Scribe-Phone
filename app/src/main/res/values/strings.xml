@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Bark Pocket</string>
+    <string name="shortcut_dictate">Dictate</string>
+    <string name="shortcut_document">Dictate + save</string>
+</resources>

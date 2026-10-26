@@ -1,0 +1,11 @@
+.gradle/
+local.properties
+**/build/
+.idea/
+*.iml
+
+# Local build toolchain and outputs
+.toolchain/
+dist/
+local.properties
+*.apk
