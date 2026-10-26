@@ -50,6 +50,13 @@ PASS: Configured-launch host test (Robolectric, temporary harness, SDK 35):
       - output: LAUNCH_CONTENT=android.view.View.
       This proves the setup layout is not inflated on a configured launch.
 
+PASS: GitHub Actions workflow run 40285743453 completed successfully on
+      2026-10-26 with build + lint, checksum and artifact upload.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40285743453
+      CI artifact: 149,787 bytes, SHA-256
+      19122da692d48a8e004667c583118bf7e40a074e9b93addd7ec452faa98b751b
+      (built at commit 854df28; the runner generated its own debug key).
+
 PASS: 0.4.1 daily-note regression coverage remains valid (no DailyNotes changes
       in 0.4.2):
       - modern Bundle/CancellationSignal SAF query API;
@@ -75,7 +82,6 @@ NOT PERFORMED
     timing on a physical S24.
   - Real Samsung/One UI/Syncthing provider create/rename/delete/truncate.
   - Real LAN request, server errors/retry, notification and lock-screen tests.
-  - GitHub Actions execution of the 0.4.2 workflow (first run after push).
   - Stable release signing.
 
 This is a compiled, linted, debug-signed prototype. The setup layout is verified
