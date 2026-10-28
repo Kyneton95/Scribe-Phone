@@ -1,18 +1,18 @@
-VALIDATION - Scribe floating dictation 0.6.0
+VALIDATION - Scribe floating dictation 0.6.2
 Date: 2026-10-28 (Australia/Melbourne)
 
 Build
   JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK/build tools 35
   Package: au.local.barkpocket; minSdk 34; targetSdk 35
-  Version: 0.6.0-floating (versionCode 12); ABI: arm64-v8a
+  Version: 0.6.2-floating (versionCode 14); ABI: arm64-v8a
   clean :app:assembleDebug :app:lintDebug: successful; 0 errors, 43 warnings
-  Local APK: dist/Scribe-0.6.0-debug.apk
-  Size: 18,377,772 bytes
-  SHA-256: 5cf2b919d85ed9039fb4c0f033656a5e5d474a5075f4ef3f74aa1e069cfa54ee
+  Local APK: dist/Scribe-0.6.2-debug.apk
+  Size: 18,377,812 bytes
+  SHA-256: ce5843a6b92229ad70e0e30e87c1e93285f131eb706054a6b410cbe034ac1d4b
   Debug certificate SHA-256:
     6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0
 
-UI refresh (0.6.0)
+UI refresh (0.6.0–0.6.2)
   - Distinctive scribe-themed iconography: stationery-inspired Edit/Copy/Clear/Folder
     icons and a clearer stop/mic pair; close/minimize restored to recognizable glyphs.
     App uses a dedicated stationery mark alongside the launcher foreground.
@@ -21,6 +21,8 @@ UI refresh (0.6.0)
     model-manager wording, and direct model-select/delete actions.
   - Existing calm paper-and-graphite palette and colors retained; no deliberate
     gradients; no functional changes beyond copy/icons.
+  - 0.6.2 places the same stationery mark on the floating bubble as on the setup
+    title/header (replacing the mic glyph on the orb).
 
 Physical-device verification
   Installed on Samsung SM-S926B (Galaxy S24+), Android 16. UI renders; panel,
@@ -36,7 +38,7 @@ Not performed
   stable release signing.
 
 Local hand-off APK
-  Path      dist/Scribe-0.6.0-debug.apk
-  Size      18,377,772 bytes
-  SHA-256   5cf2b919d85ed9039fb4c0f033656a5e5d474a5075f4ef3f74aa1e069cfa54ee
+  Path      dist/Scribe-0.6.2-debug.apk
+  Size      18,377,812 bytes
+  SHA-256   ce5843a6b92229ad70e0e30e87c1e93285f131eb706054a6b410cbe034ac1d4b
   Signature debug, v2 scheme

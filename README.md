@@ -12,6 +12,17 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 > `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
 >
+> **0.6.2:** scribe/pen mark on the floating bubble to match the setup title
+> mark — the orb now shows the same stationery icon instead of the mic glyph.
+>
+> **0.6.1:** scribe/pen mark beside “Scribe” on the setup header and expanded
+> card header, replacing the sparkle.
+>
+> **0.6.0:** UI refresh — stationery-inspired Edit/Copy/Clear/Folder icons,
+> clearer stop/mic glyphs, tighter copy throughout setup and the card
+> (“Save draft” vs “Add to today’s note”), clearer model-manager wording. The
+> calm paper-and-graphite palette is unchanged.
+>
 > **0.5.2:** fixed the on-device model crash: sherpa now reads downloaded
 > model files from their absolute filesystem paths instead of treating them as
 > bundled Android assets. Verified with Moonshine on an S24+ running Android 16.
@@ -58,7 +69,7 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
   35 and Build Tools 35.0.0** (pinned).
 - **APK:** `dist/Scribe-0.6.2-debug.apk` — **18,377,812 bytes**
 - **SHA-256:**
-  `5daf6ecdc96c04e241491f7bf715c9f0af2e44186c75c2d2ac7f4b0f638374d0`
+  `ce5843a6b92229ad70e0e30e87c1e93285f131eb706054a6b410cbe034ac1d4b`
 - Android lint: **0 errors** (43 warnings, mostly hardcoded localization strings
   and the required adaptive-icon folder).
 - APK integrity, manifest components and signature were checked with
@@ -81,7 +92,7 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 ## Install
 
-1. Copy `Scribe-0.5.2-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.6.2-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
