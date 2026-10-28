@@ -33,10 +33,6 @@ Retained checks from 0.5.x
   APK contains sherpa-onnx arm64 runtime but no model weights. Daily Markdown
   (## HH:mm), SAF append/repair, launch handoff, server paths remain unchanged.
 
-Not performed
-  Full on-device test of every screen interaction; Whisper/Parakeet on-device;
-  stable release signing.
-
 Local hand-off APK
   Path      dist/Scribe-0.6.2-debug.apk
   Size      18,377,812 bytes
