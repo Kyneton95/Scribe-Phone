@@ -61,6 +61,13 @@ APP CHANGES IN 0.4.3
   - Setup now says "API key / bearer token", "Paste the key only (no 'Bearer')"
     and "Use the full path, not the server home page".
 
+PASS: GitHub Actions workflow run 40616984739 completed successfully on
+      2026-10-28 with build + lint, checksum and artifact upload.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40616984739
+      CI artifact: 151,599 bytes, SHA-256
+      ce3df2840c5a7a008e68188126ffc4fddd90c54cbf3c37317a83188330c97a84
+      (built at commit 74560c1; the runner generated its own debug key).
+
 PASS: Compile/lint and code review of the 0.4.3 changes.
 PASS: 0.4.2 configured-launch host test remains valid: onCreate contains only
       the blank handoff View, not the setup form.
@@ -83,7 +90,6 @@ NOT PERFORMED
   - Real Samsung/One UI/Syncthing provider create/rename/delete/truncate.
   - Real microphone foreground service, overlay gestures, notifications and
     lock-screen tests.
-  - GitHub Actions execution of the 0.4.3 workflow (first run after push).
   - Stable release signing.
 
 SECURITY NOTE
