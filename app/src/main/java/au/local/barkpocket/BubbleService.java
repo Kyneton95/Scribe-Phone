@@ -1087,6 +1087,10 @@ public class BubbleService extends Service {
     }
 
     private String upload(File audio) throws Exception {
+        if (LocalModels.isLocal(this)) {
+            store.status = "Transcribing on device…";
+            return LocalAsr.transcribe(this, audio);
+        }
         String endpoint = store.endpoint();
         if (endpoint == null || endpoint.trim().isEmpty()) {
             throw new IOException("Set the server URL in settings.");

@@ -44,6 +44,11 @@ public class MainActivity extends Activity {
     private SessionStore store;
     private EditText endpoint;
     private EditText token;
+    private LinearLayout serverCard;
+    private TextView engineServer;
+    private TextView engineLocal;
+    private TextView localButton;
+    private TextView localModelLabel;
     private TextView micStatus;
     private TextView bubbleStatus;
     private TextView folderStatus;
@@ -292,6 +297,53 @@ public class MainActivity extends Activity {
             pausePills[i] = pill;
         }
 
+        TextView engineEyebrow = Ui.text(this, "ENGINE", 10.5f, Ui.MUTED, true);
+        engineEyebrow.setLetterSpacing(0.16f);
+        LinearLayout.LayoutParams engineEyebrowLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        engineEyebrowLp.topMargin = Ui.dp(this, 20);
+        body.addView(engineEyebrow, engineEyebrowLp);
+
+        LinearLayout engineCard = card();
+        body.addView(engineCard, cardLp());
+        engineCard.addView(Ui.text(this, "Where should transcription run?", 12, Ui.MUTED, false));
+        LinearLayout engineRow = new LinearLayout(this);
+        engineRow.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams engineRowLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        engineRowLp.topMargin = Ui.dp(this, 8);
+        engineCard.addView(engineRow, engineRowLp);
+        engineServer = enginePill("Server");
+        engineLocal = enginePill("On-device");
+        engineServer.setOnClickListener(v -> {
+            LocalModels.setEngine(this, false);
+            updateStatus();
+        });
+        engineLocal.setOnClickListener(v -> {
+            LocalModels.setEngine(this, true);
+            updateStatus();
+            if (!LocalModels.installed(this, LocalModels.selected(this))) openModels();
+        });
+        LinearLayout.LayoutParams half = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        engineRow.addView(engineServer, half);
+        LinearLayout.LayoutParams half2 = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        half2.leftMargin = Ui.dp(this, 7);
+        engineRow.addView(engineLocal, half2);
+
+        localModelLabel = Ui.text(this, "", 10.5f, Ui.MUTED, false);
+        localModelLabel.setLineSpacing(Ui.dp(this, 2), 1.06f);
+        LinearLayout.LayoutParams localModelLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        localModelLp.topMargin = Ui.dp(this, 8);
+        engineCard.addView(localModelLabel, localModelLp);
+
+        localButton = Ui.text(this, "Manage on-device models  →", 12.5f, Ui.TERRACOTTA, true);
+        localButton.setPadding(0, Ui.dp(this, 9), 0, Ui.dp(this, 1));
+        localButton.setOnClickListener(v -> openModels());
+        engineCard.addView(localButton);
+
         TextView serverEyebrow = Ui.text(this, "SERVER", 10.5f, Ui.MUTED, true);
         serverEyebrow.setLetterSpacing(0.16f);
         LinearLayout.LayoutParams serverLp = new LinearLayout.LayoutParams(
@@ -299,7 +351,7 @@ public class MainActivity extends Activity {
         serverLp.topMargin = Ui.dp(this, 20);
         body.addView(serverEyebrow, serverLp);
 
-        LinearLayout serverCard = card();
+        serverCard = card();
         body.addView(serverCard, cardLp());
         serverCard.addView(Ui.text(this, "Transcription endpoint", 12, Ui.MUTED, false));
         endpoint = input(false);
@@ -580,21 +632,68 @@ public class MainActivity extends Activity {
         }
     }
 
+    private TextView enginePill(String text) {
+        TextView pill = Ui.text(this, text, 12, Ui.INK, true);
+        pill.setGravity(Gravity.CENTER);
+        pill.setPadding(0, Ui.dp(this, 10), 0, Ui.dp(this, 10));
+        pill.setBackground(Ui.rounded(Ui.SURFACE_ALT, 18, this));
+        Ui.touchAnimation(pill);
+        return pill;
+    }
+
+    private void openModels() {
+        startActivity(new Intent(this, ModelsActivity.class));
+    }
+
+    private void updateEngineUi() {
+        if (engineServer == null) return;
+        boolean local = LocalModels.isLocal(this);
+        styleEnginePill(engineServer, !local);
+        styleEnginePill(engineLocal, local);
+        serverCard.setVisibility(local ? View.GONE : View.VISIBLE);
+        localButton.setVisibility(local ? View.VISIBLE : View.GONE);
+        if (local) {
+            LocalModels.Spec spec = LocalModels.selected(this);
+            localModelLabel.setText(LocalModels.installed(this, spec)
+                    ? "Using " + spec.name + " · " + spec.downloadLabel + " download"
+                    : "No on-device model installed yet. Choose and download one.");
+        } else {
+            localModelLabel.setText("");
+            LocalAsr.release();
+        }
+    }
+
+    private void styleEnginePill(TextView pill, boolean selected) {
+        pill.setTextColor(selected ? Ui.PAPER : Ui.INK);
+        pill.setBackground(Ui.rounded(selected ? Ui.INK : Ui.SURFACE_ALT, 18, this));
+    }
+
     private void attemptStart() {
-        String url = endpoint.getText().toString().trim();
-        try {
-            URI uri = new URI(url);
-            if (uri.getHost() == null
-                    || !( "http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
-                    || uri.getUserInfo() != null) {
-                throw new IllegalArgumentException();
+        if (LocalModels.isLocal(this)) {
+            LocalModels.Spec spec = LocalModels.selected(this);
+            if (!LocalModels.installed(this, spec)) {
+                startWhenReady = false;
+                showError("Download " + spec.name + " before starting local transcription.");
+                openModels();
+                return;
             }
-            prefs.edit().putString("endpoint", url)
-                    .putString("token", token.getText().toString().trim()).apply();
-        } catch (Exception e) {
-            startWhenReady = false;
-            showError("Enter a full HTTP/HTTPS transcription URL.");
-            return;
+            prefs.edit().putString("token", token.getText().toString().trim()).apply();
+        } else {
+            String url = endpoint.getText().toString().trim();
+            try {
+                URI uri = new URI(url);
+                if (uri.getHost() == null
+                        || !("http".equals(uri.getScheme()) || "https".equals(uri.getScheme()))
+                        || uri.getUserInfo() != null) {
+                    throw new IllegalArgumentException();
+                }
+                prefs.edit().putString("endpoint", url)
+                        .putString("token", token.getText().toString().trim()).apply();
+            } catch (Exception e) {
+                startWhenReady = false;
+                showError("Enter a full HTTP/HTTPS transcription URL.");
+                return;
+            }
         }
         showError(null);
 
@@ -653,8 +752,11 @@ public class MainActivity extends Activity {
     }
 
     private boolean isReady() {
+        boolean engineReady = LocalModels.isLocal(this)
+                ? LocalModels.installed(this, LocalModels.selected(this))
+                : !prefs.getString("endpoint", "").isEmpty();
         return !prefs.getString("folder", "").isEmpty()
-                && !prefs.getString("endpoint", "").isEmpty()
+                && engineReady
                 && checkSelfPermission(Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED
                 && Settings.canDrawOverlays(this);
@@ -678,6 +780,7 @@ public class MainActivity extends Activity {
         startButton.setText(running ? "Save and return to bubble" : "Start floating bubble");
         hideButton.setVisibility(running ? View.VISIBLE : View.GONE);
         noteLabel.setText("Today’s note · " + DailyNotes.fileName());
+        updateEngineUi();
         updatePausePills();
     }
 

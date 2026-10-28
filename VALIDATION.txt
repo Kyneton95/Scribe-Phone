@@ -1,4 +1,4 @@
-VALIDATION - Scribe floating dictation 0.4.3
+VALIDATION - Scribe floating dictation 0.5.0
 Date: 2026-10-28 (Australia/Melbourne)
 
 Environment
@@ -6,97 +6,89 @@ Environment
   Gradle       8.9 (committed wrapper)
   AGP          8.7.3
   compileSdk   35 (Android 15)
-  buildTools   35.0.0 (pinned in app/build.gradle)
+  buildTools   35.0.0
   minSdk       34 (Android 14)
   targetSdk    35
   Package      au.local.barkpocket
   Label        Scribe
-  Version      0.4.3-floating (versionCode 8)
+  Version      0.5.0-floating (versionCode 9)
+  Runtime      sherpa-onnx 2.0.1, arm64-v8a only
 
 PASS: ./gradlew :app:assembleDebug BUILD SUCCESSFUL.
-PASS: ./gradlew :app:lintDebug 0 errors, 26 warnings.
+PASS: ./gradlew :app:lintDebug 0 errors, 43 warnings.
+      Warnings are hardcoded UI strings, unused resources, vector length,
+      obsolete v26 folder, SDK checks and touch-accessibility suggestions.
+      No permission, manifest, native-library, ABI or API-level errors.
 PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (151,607 bytes).
+      (37,140,319 bytes).
 PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
-      CN=Android Debug, SHA-256
-      6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
-PASS: unzip -t: no compressed-data errors.
-PASS: aapt2 badging: label "Scribe", versionCode 8, versionName
-      0.4.3-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
-PASS: manifest: MainActivity Theme.Scribe.Launch; BubbleService microphone
-      foreground type; launcher/shortcuts intact; backup disabled.
+      SHA-256 6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
+PASS: aapt2 badging: versionCode 9, versionName 0.5.0-floating.
+PASS: native libs packaged only for arm64-v8a:
+      libonnxruntime.so, libsherpa-onnx-c-api.so,
+      libsherpa-onnx-cxx-api.so, libsherpa-onnx-jni.so.
+PASS: ModelsActivity is present and exported=false.
+PASS: **no model weights are bundled**. `unzip -l app-debug.apk` finds no
+      .onnx, .tar.bz2, tokens.txt or test_wavs entries.
+PASS: APK carries the sherpa-onnx 2.0.1 AAR (classes + arm64 native libs),
+      Kotlin stdlib, and Apache Commons Compress/IO/Codec.
 
-LIVE SERVER PROBE
-  Tested the user-supplied endpoint from this host with the user-provided API
-  key (the key is deliberately not recorded here). A valid 16 kHz mono WAV was
-  POSTed as multipart/form-data with:
-    - Authorization: Bearer <key> to /v1/audio/transcriptions
-    - Authorization: Bearer <key> to the bare host /
-    - X-API-Key: <key> to /v1/audio/transcriptions
-    - HTTP/1.1 as well as HTTP/2
-  Every POST returned:
-    HTTP 200
-    content-length: 0
-    server: cloudflare
-    cf-cache-status: DYNAMIC
-  GET / and GET /health initially returned the origin's JSON; GET /docs,
-  GET /openapi.json and later POSTs returned the same empty Cloudflare 200.
-  This proves the supplied key was not reaching the transcription origin and
-  the app was parsing an empty proxy response, not mis-parsing the bearer
-  token. The server/proxy must allow POST through, or the LAN URL must be used.
+ON-DEVICE MODEL SUPPORT
+  Catalog:
+    - Whisper Tiny English: 113 MB archive, required int8 encoder/decoder +
+      tokens, MIT.
+    - Moonshine Tiny English: 103 MB archive, preprocessor/encoder/uncached/
+      cached decode + tokens, MIT.
+    - Parakeet TDT 0.6B v2 int8: 482,468,385-byte archive, encoder/decoder/
+      joiner + tokens, CC-BY-4.0.
+  Downloads use Android DownloadManager and app-specific external storage;
+  installs are extracted into app-private files/models/<id>; Delete removes the
+  model and archive. The APK has no model weights.
 
-APP CHANGES IN 0.4.3
-  - Empty 2xx body now raises:
-    "Server returned an empty HTTP N response. Use the full transcription URL
-     (for example https://host/v1/audio/transcriptions), or the server's LAN
-     URL, and allow POST through Cloudflare/WAF. This is usually a proxy or
-     wrong-URL issue, not the token."
-  - Empty non-2xx body reports "(empty response)".
-  - Non-JSON 2xx reports the HTTP status plus a 240-character body excerpt.
-  - Token input is trimmed; an accidental "Authorization:" or "Bearer " prefix
-    is stripped before the Authorization header is built.
-  - A bare host URL is retried once at /v1/audio/transcriptions after an empty
-    2xx response.
-  - Added Accept: application/json and User-Agent: Scribe/0.4.3 (Android).
-  - Setup now says "API key / bearer token", "Paste the key only (no 'Bearer')"
-    and "Use the full path, not the server home page".
+PASS: Host inference tests using the sherpa-onnx 2.0.1 JVM binding and Linux
+      x64 native libraries:
+      - Whisper Tiny English, test_wavs/0.wav:
+        "After early nightfall, the yellow lamps would light up here and there
+         the squalid quarter of the brothels."
+      - Moonshine Tiny English, test_wavs/0.wav:
+        same sentence, correct.
+      - Parakeet TDT 0.6B v2 int8, test_wavs/0.wav:
+        "Well, I don't wish to see it any more, observed Phebe, turning away
+         her eyes. It is certainly very like the old portrait."
+      This validates the model files, configs and expected text. It does not
+      execute the Android arm64 JNI binary.
 
-PASS: GitHub Actions workflow run 40616984739 completed successfully on
-      2026-10-28 with build + lint, checksum and artifact upload.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40616984739
-      CI artifact: 151,599 bytes, SHA-256
-      ce3df2840c5a7a008e68188126ffc4fddd90c54cbf3c37317a83188330c97a84
-      (built at commit 74560c1; the runner generated its own debug key).
-
-PASS: Compile/lint and code review of the 0.4.3 changes.
-PASS: 0.4.2 configured-launch host test remains valid: onCreate contains only
-      the blank handoff View, not the setup form.
-PASS: 0.4.1 daily-note SAF tests remain valid: fake DocumentsProvider merged
-      three .md(...).txt shards into one ordered .md and appended a second
-      commit to that same file. DailyNotes was not changed in 0.4.3.
-PASS: 0.4.0 UI smoke tests remain valid: panel construct/measure/add.
+PASS: Host extraction/install tests (Robolectric, temporary harness):
+      - All three archives installed and passed required-file checks.
+      - Installed sizes observed: Moonshine 124,793,446 bytes; Parakeet
+        661,428,477 bytes. Whisper was reduced by skipping float32 ONNX files
+        and test_wavs; required int8 files total ~103.6 MB.
+      - Delete removes the model directory and archive.
+PASS: ModelsActivity opens and renders the model list (Robolectric).
+PASS: MainActivity setup renders the new ENGINE card and On-device toggle
+      (Robolectric).
+PASS: Existing tests remain valid:
+      - 0.4.1 daily Markdown shard merge/append with a fake DocumentsProvider.
+      - 0.4.2 configured-launch blank handoff (no setup inflation).
+      - Transcript joining and HH:mm daily-note formatting.
+      - 0.4.0 panel construct/measure/add.
 
 Local hand-off APK
-  Path      dist/Scribe-0.4.3-debug.apk
-  Size      151,607 bytes
-  SHA-256   0513b56fac6060914d59c1b95f2ea095ad176e3702c1eada3c2c458361805b75
+  Path      dist/Scribe-0.5.0-debug.apk
+  Size      37,140,319 bytes
+  SHA-256   b9f94358f98f713efad53cf7f71b4a7eaac0376f214e99098e24255dd73b949d
   Signature debug, v2 scheme
 
 NOT PERFORMED
   - Installation or launch on a physical phone or emulator (no device attached;
     no /dev/kvm for an accelerated emulator).
-  - A successful live transcription through Cloudflare or through the LAN URL;
-    the key was rejected by Cloudflare before reaching uvicorn.
-  - Real Samsung/One UI/Syncthing provider create/rename/delete/truncate.
-  - Real microphone foreground service, overlay gestures, notifications and
-    lock-screen tests.
+  - Android arm64 JNI inference on the S24; host JVM inference is not the same
+    binary.
+  - DownloadManager progress/notification behavior and a real 482 MB download.
+  - Actual on-device model install/performance/memory under One UI.
+  - GitHub Actions execution of the 0.5.0 workflow (first run after push).
   - Stable release signing.
 
-SECURITY NOTE
-  The API key was pasted into the chat. It should be rotated on the server even
-  though it did not reach the transcription origin in this test. Do not put it
-  in the repository or a screenshot.
-
-This is a compiled, linted, debug-signed prototype. 0.4.3 makes proxy/empty
-responses explicit; the live endpoint still needs a Cloudflare POST allow rule
-or a LAN URL before transcription can succeed.
+This is a compiled, linted, debug-signed prototype. The APK contains only the
+runtime; all model weights are downloaded on demand. Because the runtime is
+arm64-v8a only, this APK will not install on 32-bit or x86 devices.

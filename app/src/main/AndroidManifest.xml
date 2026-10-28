@@ -39,6 +39,11 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
+        <activity
+            android:name=".ModelsActivity"
+            android:exported="false"
+            android:label="On-device models" />
+
         <service
             android:name=".BubbleService"
             android:exported="false"

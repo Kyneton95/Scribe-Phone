@@ -6,12 +6,17 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-- **Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40616984739>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
 > `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
+>
+> **0.5.0:** optional on-device transcription. The APK ships only the
+> sherpa-onnx runtime; Whisper Tiny, Moonshine Tiny and Parakeet TDT are
+> downloaded on demand from inside Scribe, installed into app-private storage
+> and selected with an **On-device** engine toggle. No model weights are
+> bundled. See “On-device transcription”.
 >
 > **0.4.3:** server failures are clearer. An empty HTTP 2xx response is now
 > reported as an empty proxy/URL response instead of a JSON “end of input”
@@ -41,10 +46,10 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.4.3-debug.apk` — **151,607 bytes**
+- **APK:** `dist/Scribe-0.5.0-debug.apk` — **37,140,319 bytes**
 - **SHA-256:**
-  `0513b56fac6060914d59c1b95f2ea095ad176e3702c1eada3c2c458361805b75`
-- Android lint: **0 errors** (26 warnings, mostly hardcoded localization strings
+  `b9f94358f98f713efad53cf7f71b4a7eaac0376f214e99098e24255dd73b949d`
+- Android lint: **0 errors** (43 warnings, mostly hardcoded localization strings
   and the required adaptive-icon folder).
 - APK integrity, manifest components and signature were checked with
   `apksigner`, `aapt2` and `unzip -t`; see [VALIDATION.txt](VALIDATION.txt).
@@ -54,17 +59,18 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 - Host-side smoke tests passed for setup-activity launch, panel
   construct/render/measure/add, and foreground-service start + panel expansion.
   They found the 0.3 launch crash fixed in 0.3.1, exercised the new paper card
-  in 0.4.0, and the 0.4.1 SAF test merged three `.md(...).txt` shards into one
-  ordered `.md` and appended a second commit to the same file. The 0.4.2 launch
-  test confirms a configured launch contains only the blank handoff View and
-  does not inflate the setup form. The 0.4.3 server-error handling was checked
-  against the live endpoint and the host build.
+  in 0.4.0, the 0.4.1 SAF test merged three `.md(...).txt` shards into one
+  ordered `.md`, the 0.4.2 launch test confirmed the setup form is not inflated
+  on a configured launch, and the 0.4.3 server-error handling was checked
+  against the live endpoint. For 0.5.0, host inference produced correct
+  transcripts from all three downloaded models, and a host installer test
+  unpacked all three archives.
 - Debug-signed only. A later build from another machine/runner can use a
   different debug key; switching builds may require uninstalling first.
 
 ## Install
 
-1. Copy `Scribe-0.4.3-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.5.0-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -89,6 +95,53 @@ When the card is open:
 - The larger **minus** button minimises; the larger **X** closes the bubble and
   its foreground service.
 - The settings, minimise and close buttons are 42–48 dp touch targets.
+
+## On-device transcription (optional)
+
+Scribe can transcribe locally instead of POSTing audio to your server. The APK
+contains only the **sherpa-onnx 2.0.1 runtime** (arm64-v8a); it does **not**
+contain any model weights. Models are explicit user downloads from the
+sherpa-onnx GitHub releases and live in the app’s private storage.
+
+| Model | Family | Download | Installed | Notes |
+|---|---|---:|---:|---|
+| Whisper Tiny English | Whisper int8 | ~113 MB | ~103 MB | Fastest; good default |
+| Moonshine Tiny English | Moonshine int8 | ~103 MB | ~125 MB | Low latency |
+| Parakeet TDT 0.6B v2 | NeMo transducer int8 | ~460 MB | ~631 MB | Best accuracy; slower on CPU |
+
+All three are English-only in this build. Android’s system DownloadManager
+performs the download, so it can continue with the screen closed. Installation
+(extracting the `.tar.bz2`) should be done with Scribe open; the screen is kept
+on while extracting.
+
+### Install and use
+
+1. In setup, choose **ENGINE → On-device**. If no model is installed, the model
+   manager opens automatically.
+2. Tap **Download** beside a model. Wait for **Downloaded — tap Install**, then
+   tap **Install**.
+3. Tap **Use** on the installed model. This selects it and switches the engine
+   to on-device.
+4. Start the floating bubble as usual. Audio is transcribed by the model and
+   never sent to the server.
+5. Return to **Manage on-device models** at any time to switch models or
+   **Delete** one and reclaim its storage.
+
+The APK is **arm64-v8a only** because that is the only ABI packaged from the
+sherpa runtime. If local mode fails to start, the model may be missing or the
+device may not support the native runtime; switch back to **Server** or
+reinstall the model.
+
+### Privacy and limits
+
+- In local mode, recorded phrases and transcripts stay on the phone. Only the
+  explicit model download contacts GitHub.
+- CPU-only inference: Whisper Tiny/Moonshine are suitable for everyday notes;
+  Parakeet is heavier and can take noticeably longer per phrase.
+- The model archives are third-party artifacts: Whisper MIT, Moonshine MIT,
+  Parakeet CC-BY-4.0. Their licences remain with the model files.
+- There is no model checksum beyond the archive extraction and required-file
+  verification; a failed install can be deleted and retried.
 
 ## How the dictation flow works
 
@@ -256,6 +309,22 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`.
 The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
 writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
 artifact.
+
+## Changes in 0.5.0
+
+- Added optional on-device transcription through a bundled sherpa-onnx 2.0.1
+  arm64 runtime. No model weights are shipped in the APK.
+- Added a model manager for Whisper Tiny English, Moonshine Tiny English and
+  Parakeet TDT 0.6B v2 int8: DownloadManager downloads, tar.bz2 extraction,
+  required-file checks, install/select/delete and storage reporting.
+- Added a **Server / On-device** engine toggle on setup. Server fields are
+  hidden when local is selected; the floating card and service use the selected
+  engine.
+- Local inference feeds the existing 16 kHz mono WAV phrases through
+  sherpa-onnx and joins the result with the existing draft logic.
+- Verified all three model archives install and infer correctly on the host
+  (Linux x64 sherpa runtime) and that the APK contains no `.onnx` or archive
+  files.
 
 ## Changes in 0.4.3
 
