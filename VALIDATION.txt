@@ -1,93 +1,45 @@
-VALIDATION - Scribe floating dictation 0.5.1
+VALIDATION — Scribe 0.5.2
 Date: 2026-10-28 (Australia/Melbourne)
 
-Environment
-  JDK          Temurin 17.0.21+9
-  Gradle       8.9 (committed wrapper)
-  AGP          8.7.3
-  compileSdk   35 (Android 15)
-  buildTools   35.0.0
-  minSdk       34 (Android 14)
-  targetSdk    35
-  Package      au.local.barkpocket
-  Label        Scribe
-  Version      0.5.1-floating (versionCode 10)
-  Runtime      sherpa-onnx 2.0.1, arm64-v8a only
+Build
+  JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK/build tools 35
+  Package: au.local.barkpocket; minSdk 34; targetSdk 35
+  Version: 0.5.2-floating (versionCode 11); ABI: arm64-v8a
+  clean :app:assembleDebug :app:lintDebug: successful; 0 errors, 43 warnings
+  Local APK: dist/Scribe-0.5.2-debug.apk
+  Size: 18,376,711 bytes
+  SHA-256: 5daf6ecdc96c04e241491f7bf715c9f0af2e44186c75c2d2ac7f4b0f638374d0
+  Debug certificate SHA-256:
+    6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0
 
-PASS: ./gradlew :app:assembleDebug BUILD SUCCESSFUL.
-PASS: ./gradlew :app:lintDebug 0 errors, 43 warnings.
-      Warnings are hardcoded UI strings, unused resources, vector length,
-      obsolete v26 folder, SDK checks and touch-accessibility suggestions.
-PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (18,376,755 bytes; native libs compressed and extracted at install,
-      so installed size is roughly 37 MB).
-PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
-      SHA-256 6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
-PASS: aapt2 badging: versionCode 10, versionName 0.5.1-floating.
-PASS: manifest:
-      - android:extractNativeLibs="true"
-      - android:largeHeap="true"
-      - ModelsActivity present, exported=false
-      - arm64-v8a only, no model weights.
-PASS: native libs packaged: libonnxruntime.so, libsherpa-onnx-c-api.so,
-      libsherpa-onnx-cxx-api.so, libsherpa-onnx-jni.so (compressed in APK,
-      extracted by Android at install).
-PASS: no model weights in the APK (`unzip -l` finds no .onnx/.tar.bz2/
-      tokens.txt/test_wavs).
+Cause and fix
+  The 0.5.1 device log recorded sherpa-onnx reporting an absolute model
+  tokens.txt path with a non-null AssetManager, followed by a fatal read failure.
+  Downloaded models are filesystem files, not APK assets. LocalAsr now passes
+  null for the AssetManager, selecting sherpa's file-loading constructor.
 
-LOCAL-MODEL CRASH HARDENING IN 0.5.1
-  - LocalAsr now wraps config building, model loading and decoding in
-    catch (Throwable), logs under the ScribeLocal tag, releases the stream, and
-    converts the failure to an IOException shown in the card.
-  - The upload worker catches Throwable instead of Exception and logs under
-    ScribeBubble, so a Java/Kotlin Error no longer kills the worker silently.
-  - android:extractNativeLibs="true" ensures the arm64 libraries are unpacked
-    into the install library directory rather than loaded directly from the
-    APK; android:largeHeap="true" gives the Java heap more headroom.
-  - If a native SIGSEGV/SIGABRT still occurs, the process will still die; the
-    logcat crash buffer is required to identify the failing model/native call.
-  - Model files and installed state are unchanged; updating from 0.5.0 keeps
-    downloaded models.
+Physical-device verification
+  Updated the existing installation on Samsung SM-S926B (Galaxy S24+),
+  Android 16, using adb install -r. Existing Moonshine model and two pending
+  WAV phrases were preserved. Retried those phrases through the app's overlay.
+  Logcat showed:
+    load moonshine-tiny-en
+    loaded moonshine-tiny-en
+    decode moonshine-tiny-en samples=29440
+    decoded moonshine-tiny-en chars=24
+    decode moonshine-tiny-en samples=23680
+    decoded moonshine-tiny-en chars=24
+  The app process remained alive. No daily note was committed during testing.
+  This validates the actual Android arm64 runtime and Moonshine file loading
+  and decoding, not every model or the complete recording/save workflow.
 
-PASS: GitHub Actions workflow run 40623677269 completed successfully on
-      2026-10-28 with build + lint, checksum and artifact upload.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40623677269
-      CI artifact: 18,376,755 bytes, SHA-256
-      81f26d91460437e1a7e9d6ec2950c1642433a4ed154515f4b4747599e4f23aec
-      (built at commit e887d21; runner debug key differs from the local APK).
-      CI APK inspected: no model weights.
+Retained checks from 0.5.0/0.5.1
+  The APK contains the sherpa-onnx 2.0.1 arm64 runtime but no model weights.
+  Earlier host tests extracted all three model archives and transcribed test
+  audio using the Linux sherpa runtime. Those host results do not establish
+  Android-device behaviour for Whisper or Parakeet.
 
-PASS: Existing 0.5.0 validation remains applicable to model handling and
-      inference, since the model catalog, installer and LocalAsr model configs
-      were not changed in 0.5.1:
-      - Host inference with sherpa-onnx 2.0.1 JVM/Linux produced correct
-        transcripts from Whisper Tiny, Moonshine Tiny and Parakeet test WAVs.
-      - Host extraction installed all three archives and passed required-file
-        checks.
-      - ModelsActivity and the ENGINE setup card opened successfully.
-      - 0.4.1 daily Markdown SAF repair/append and 0.4.2 launch handoff tests.
-PASS: APK no-model inspection repeated on 0.5.1.
-
-Local hand-off APK
-  Path      dist/Scribe-0.5.1-debug.apk
-  Size      18,376,755 bytes
-  SHA-256   0e5c57d1296cdfd82a9eca81fbb23bdfd34f5c623030788930bc6e6b5e010272
-  Signature debug, v2 scheme
-
-NOT PERFORMED
-  - Installation or launch on a physical phone or emulator (no device attached;
-    no /dev/kvm).
-  - Android arm64 JNI inference on the S24. **A device crash still needs a
-    logcat**, because the host JVM runtime is not the Android native binary.
-  - DownloadManager behavior and a real 482 MB download.
-  - Real on-device model performance/memory.
-  - Stable release signing.
-
-NEXT DEBUG STEP IF IT STILL CRASHES
-  adb logcat -c
-  # reproduce on-device inference
-  adb logcat -d -b crash
-  adb logcat -d | grep -E 'FATAL|signal|ScribeLocal|sherpa|onnx|AndroidRuntime'
-
-The crash buffer will show whether this is a Java/Kotlin failure (now caught and
-shown) or a native backtrace, and which model was selected.
+Not performed
+  Whisper and Parakeet inference on the S24+; a fresh live microphone recording;
+  end-to-end daily note commit and Syncthing; device restart or lock-screen
+  behaviour; stable release signing. Model downloads remain optional.

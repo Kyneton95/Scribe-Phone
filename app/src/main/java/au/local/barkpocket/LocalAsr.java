@@ -65,7 +65,10 @@ final class LocalAsr {
         try {
             Log.i(TAG, "load " + spec.id);
             OfflineRecognizerConfig config = buildConfig(context, spec);
-            recognizer = new OfflineRecognizer(context.getAssets(), config);
+            // Model files are absolute paths in app storage. Passing the
+            // AssetManager here makes sherpa treat them as assets and abort
+            // when it cannot read tokens.txt; the null constructor loads files.
+            recognizer = new OfflineRecognizer(null, config);
             recognizerId = spec.id;
             Log.i(TAG, "loaded " + spec.id);
             return recognizer;
