@@ -1,5 +1,5 @@
-VALIDATION - Scribe floating dictation 0.4.2
-Date: 2026-10-26 (Australia/Melbourne)
+VALIDATION - Scribe floating dictation 0.4.3
+Date: 2026-10-28 (Australia/Melbourne)
 
 Environment
   JDK          Temurin 17.0.21+9
@@ -11,79 +11,86 @@ Environment
   targetSdk    35
   Package      au.local.barkpocket
   Label        Scribe
-  Version      0.4.2-floating (versionCode 7)
+  Version      0.4.3-floating (versionCode 8)
 
 PASS: ./gradlew :app:assembleDebug BUILD SUCCESSFUL.
 PASS: ./gradlew :app:lintDebug 0 errors, 26 warnings.
-      Warnings are mostly hardcoded UI strings, unused resources and the
-      required v26 adaptive-icon folder. No permission, manifest,
-      foreground-service or API-level errors.
 PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (149,795 bytes).
+      (151,607 bytes).
 PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
       CN=Android Debug, SHA-256
       6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
-      This is the local debug key, not a stable release key.
 PASS: unzip -t: no compressed-data errors.
-PASS: aapt2 badging: label "Scribe", versionCode 7, versionName
-      0.4.2-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
-PASS: aapt2 manifest dump: MainActivity uses Theme.Scribe.Launch
-      (windowDisablePreview=true); BubbleService declared with
-      foregroundServiceType=microphone (0x80); MainActivity singleTask
-      launcher with shortcuts; DraftEditActivity exported=false; VoiceTile
-      bound by BIND_QUICK_SETTINGS_TILE; allowBackup=false;
-      dataExtractionRules present; usesCleartextTraffic=true.
+PASS: aapt2 badging: label "Scribe", versionCode 8, versionName
+      0.4.3-floating, minSdk 34, targetSdk 35, adaptive launcher icon.
+PASS: manifest: MainActivity Theme.Scribe.Launch; BubbleService microphone
+      foreground type; launcher/shortcuts intact; backup disabled.
 
-LAUNCH FIX IN 0.4.2
-  Cause: MainActivity always called buildUi() in onCreate before checking
-  isReady(), then hid the setup body and waited 220 ms before starting the
-  service. The system also drew a launcher preview from the full app theme.
-  Fix: check isReady() before buildUi(); configured launches install a blank
-  paper handoff View, start the service from onResume(), and finish as soon as
-  BubbleService.isReady(). A launch-only theme disables the system preview.
-  On service failure the setup UI is built lazily and the error is shown.
+LIVE SERVER PROBE
+  Tested the user-supplied endpoint from this host with the user-provided API
+  key (the key is deliberately not recorded here). A valid 16 kHz mono WAV was
+  POSTed as multipart/form-data with:
+    - Authorization: Bearer <key> to /v1/audio/transcriptions
+    - Authorization: Bearer <key> to the bare host /
+    - X-API-Key: <key> to /v1/audio/transcriptions
+    - HTTP/1.1 as well as HTTP/2
+  Every POST returned:
+    HTTP 200
+    content-length: 0
+    server: cloudflare
+    cf-cache-status: DYNAMIC
+  GET / and GET /health initially returned the origin's JSON; GET /docs,
+  GET /openapi.json and later POSTs returned the same empty Cloudflare 200.
+  This proves the supplied key was not reaching the transcription origin and
+  the app was parsing an empty proxy response, not mis-parsing the bearer
+  token. The server/proxy must allow POST through, or the LAN URL must be used.
 
-PASS: Configured-launch host test (Robolectric, temporary harness, SDK 35):
-      - granted RECORD_AUDIO, set canDrawOverlays=true, set folder + endpoint;
-      - MainActivity.onCreate created only one content child;
-      - class is android.view.View (the blank handoff), not the setup root;
-      - output: LAUNCH_CONTENT=android.view.View.
-      This proves the setup layout is not inflated on a configured launch.
+APP CHANGES IN 0.4.3
+  - Empty 2xx body now raises:
+    "Server returned an empty HTTP N response. Use the full transcription URL
+     (for example https://host/v1/audio/transcriptions), or the server's LAN
+     URL, and allow POST through Cloudflare/WAF. This is usually a proxy or
+     wrong-URL issue, not the token."
+  - Empty non-2xx body reports "(empty response)".
+  - Non-JSON 2xx reports the HTTP status plus a 240-character body excerpt.
+  - Token input is trimmed; an accidental "Authorization:" or "Bearer " prefix
+    is stripped before the Authorization header is built.
+  - A bare host URL is retried once at /v1/audio/transcriptions after an empty
+    2xx response.
+  - Added Accept: application/json and User-Agent: Scribe/0.4.3 (Android).
+  - Setup now says "API key / bearer token", "Paste the key only (no 'Bearer')"
+    and "Use the full path, not the server home page".
 
-PASS: GitHub Actions workflow run 40285743453 completed successfully on
-      2026-10-26 with build + lint, checksum and artifact upload.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40285743453
-      CI artifact: 149,787 bytes, SHA-256
-      19122da692d48a8e004667c583118bf7e40a074e9b93addd7ec452faa98b751b
-      (built at commit 854df28; the runner generated its own debug key).
-
-PASS: 0.4.1 daily-note regression coverage remains valid (no DailyNotes changes
-      in 0.4.2):
-      - modern Bundle/CancellationSignal SAF query API;
-      - text/markdown MIME and persisted document URI;
-      - fake DocumentsProvider test merged three .md(...).txt shards into one
-        ordered .md and appended a second commit to that same file;
-      - transcript joining and Markdown HH:mm formatting tests pass.
-PASS: 0.4.0 UI smoke tests remain valid (no panel/theme changes in 0.4.2):
-      MainActivity setup screen, PanelView 1000x524 add/remove, and the paper
-      UI.
+PASS: Compile/lint and code review of the 0.4.3 changes.
+PASS: 0.4.2 configured-launch host test remains valid: onCreate contains only
+      the blank handoff View, not the setup form.
+PASS: 0.4.1 daily-note SAF tests remain valid: fake DocumentsProvider merged
+      three .md(...).txt shards into one ordered .md and appended a second
+      commit to that same file. DailyNotes was not changed in 0.4.3.
+PASS: 0.4.0 UI smoke tests remain valid: panel construct/measure/add.
 
 Local hand-off APK
-  Path      dist/Scribe-0.4.2-debug.apk
-  Size      149,795 bytes
-  SHA-256   a82e780f1a04ba15eac6abe354714f137c03585fa981960fc2a8cdc7ea37cc61
+  Path      dist/Scribe-0.4.3-debug.apk
+  Size      151,607 bytes
+  SHA-256   0513b56fac6060914d59c1b95f2ea095ad176e3702c1eada3c2c458361805b75
   Signature debug, v2 scheme
 
 NOT PERFORMED
   - Installation or launch on a physical phone or emulator (no device attached;
     no /dev/kvm for an accelerated emulator).
-  - Visual confirmation that the system splash/preview is gone on One UI.
-  - Real overlay permission flow, microphone foreground service and handoff
-    timing on a physical S24.
+  - A successful live transcription through Cloudflare or through the LAN URL;
+    the key was rejected by Cloudflare before reaching uvicorn.
   - Real Samsung/One UI/Syncthing provider create/rename/delete/truncate.
-  - Real LAN request, server errors/retry, notification and lock-screen tests.
+  - Real microphone foreground service, overlay gestures, notifications and
+    lock-screen tests.
+  - GitHub Actions execution of the 0.4.3 workflow (first run after push).
   - Stable release signing.
 
-This is a compiled, linted, debug-signed prototype. The setup layout is verified
-not to inflate on a configured launch; the remaining visual check is whether
-One UI still draws its own launcher splash before the blank handoff.
+SECURITY NOTE
+  The API key was pasted into the chat. It should be rotated on the server even
+  though it did not reach the transcription origin in this test. Do not put it
+  in the repository or a screenshot.
+
+This is a compiled, linted, debug-signed prototype. 0.4.3 makes proxy/empty
+responses explicit; the live endpoint still needs a Cloudflare POST allow rule
+or a LAN URL before transcription can succeed.

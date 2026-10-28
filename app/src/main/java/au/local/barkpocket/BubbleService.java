@@ -30,6 +30,7 @@ import android.view.WindowManager;
 import android.view.animation.OvershootInterpolator;
 import android.widget.TextView;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -1090,21 +1091,43 @@ public class BubbleService extends Service {
         if (endpoint == null || endpoint.trim().isEmpty()) {
             throw new IOException("Set the server URL in settings.");
         }
-        URL url = new URL(endpoint);
+        URL url = new URL(endpoint.trim());
         if (url.getHost() == null || url.getHost().isEmpty()
                 || !(url.getProtocol().equals("http") || url.getProtocol().equals("https"))) {
             throw new IOException("Use a full HTTP/HTTPS server URL.");
         }
+        String token = normalizedToken();
+        try {
+            return uploadOnce(url, token, audio);
+        } catch (EmptyResponseException first) {
+            // A bare host URL is almost always the server home page, not the
+            // transcription route. Retry once at the conventional full path if
+            // the proxy answered 2xx with no body.
+            if (!isBareRoot(url)) throw emptyResponse(first.code);
+            try {
+                URL retry = new URL(url.getProtocol() + "://" + url.getAuthority()
+                        + "/v1/audio/transcriptions");
+                return uploadOnce(retry, token, audio);
+            } catch (EmptyResponseException second) {
+                throw emptyResponse(second.code);
+            }
+        }
+    }
+
+    private String uploadOnce(URL url, String token, File audio) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(180000);
         connection.setInstanceFollowRedirects(false);
         connection.setRequestMethod("POST");
         connection.setDoOutput(true);
+        connection.setRequestProperty("Accept", "application/json");
+        connection.setRequestProperty("User-Agent", "Scribe/0.4.3 (Android)");
         String boundary = "ScribeBubble" + System.nanoTime();
         connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-        String token = prefs().getString("token", "");
-        if (!token.isBlank()) connection.setRequestProperty("Authorization", "Bearer " + token);
+        if (!token.isEmpty()) {
+            connection.setRequestProperty("Authorization", "Bearer " + token);
+        }
         byte[] prefix = ("--" + boundary
                 + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"phrase.wav\""
                 + "\r\nContent-Type: audio/wav\r\n\r\n").getBytes(StandardCharsets.UTF_8);
@@ -1138,16 +1161,65 @@ public class BubbleService extends Service {
                 }
             }
             if (code < 200 || code >= 300) {
-                throw new IOException("Server HTTP " + code + ": "
-                        + body.substring(0, Math.min(300, body.length())));
+                String detail = body.isBlank() ? "(empty response)" : snippet(body);
+                throw new IOException("Server HTTP " + code + ": " + detail);
             }
-            JSONObject json = new JSONObject(body);
+            if (body.isBlank()) {
+                throw new EmptyResponseException(code);
+            }
+            JSONObject json;
+            try {
+                json = new JSONObject(body);
+            } catch (JSONException e) {
+                throw new IOException("Server returned HTTP " + code
+                        + " but not JSON: " + snippet(body), e);
+            }
             if (!json.has("text") || json.isNull("text")) {
                 throw new IOException("Server response has no text field.");
             }
             return json.getString("text");
         } finally {
             connection.disconnect();
+        }
+    }
+
+    /** Accept a key with or without a copied "Bearer " / "Authorization:" prefix. */
+    private String normalizedToken() {
+        String token = prefs().getString("token", "");
+        if (token == null) return "";
+        token = token.trim();
+        if (token.regionMatches(true, 0, "Authorization:", 0, 14)) {
+            token = token.substring(14).trim();
+        }
+        if (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            token = token.substring(7).trim();
+        }
+        return token;
+    }
+
+    private static boolean isBareRoot(URL url) {
+        String path = url.getPath();
+        return path == null || path.isEmpty() || "/".equals(path);
+    }
+
+    private static String snippet(String body) {
+        String oneLine = body.replace('\n', ' ').replace('\r', ' ').trim();
+        return oneLine.length() <= 240 ? oneLine : oneLine.substring(0, 240) + "…";
+    }
+
+    private static IOException emptyResponse(int code) {
+        return new IOException("Server returned an empty HTTP " + code + " response. "
+                + "Use the full transcription URL (for example https://host/v1/audio/transcriptions), "
+                + "or the server's LAN URL, and allow POST through Cloudflare/WAF. "
+                + "This is usually a proxy or wrong-URL issue, not the token.");
+    }
+
+    private static final class EmptyResponseException extends IOException {
+        final int code;
+
+        EmptyResponseException(int code) {
+            super("Empty HTTP " + code);
+            this.code = code;
         }
     }
 

@@ -309,12 +309,13 @@ public class MainActivity extends Activity {
         endpointLp.topMargin = Ui.dp(this, 7);
         serverCard.addView(endpoint, endpointLp);
 
-        TextView tokenLabel = Ui.text(this, "Optional bearer token", 12, Ui.MUTED, false);
+        TextView tokenLabel = Ui.text(this, "API key / bearer token (optional)", 12, Ui.MUTED, false);
         LinearLayout.LayoutParams tokenLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         tokenLp.topMargin = Ui.dp(this, 12);
         serverCard.addView(tokenLabel, tokenLp);
         token = input(true);
+        token.setHint("Paste the key only (no 'Bearer')");
         token.setText(prefs.getString("token", ""));
         LinearLayout.LayoutParams tokenInputLp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
@@ -322,7 +323,7 @@ public class MainActivity extends Activity {
         serverCard.addView(token, tokenInputLp);
 
         TextView contract = Ui.text(this,
-                "Posts one phrase as multipart WAV and expects {\"text\":\"…\"}. HTTP is unencrypted — trusted LAN only.",
+                "Posts one phrase as multipart WAV and expects {\"text\":\"…\"}. Use the full path, not the server home page; the key is sent as Authorization: Bearer <key>.",
                 10.5f, Ui.MUTED, false);
         contract.setLineSpacing(Ui.dp(this, 2), 1.08f);
         LinearLayout.LayoutParams contractLp = new LinearLayout.LayoutParams(

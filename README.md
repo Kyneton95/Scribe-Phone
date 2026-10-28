@@ -6,12 +6,18 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-- **Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40285743453>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
 > `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
+>
+> **0.4.3:** server failures are clearer. An empty HTTP 2xx response is now
+> reported as an empty proxy/URL response instead of a JSON “end of input”
+> error; pasted tokens are normalised (an accidental `Bearer` prefix is
+> removed), and a bare host URL is retried once at
+> `/v1/audio/transcriptions`. Cloudflare/WAF can still block POST before the
+> token reaches the server; see Troubleshooting.
 >
 > **0.4.2:** opening the app when setup is already complete no longer inflates
 > the setup screen first. Scribe keeps a blank paper handoff, starts the floating
@@ -34,9 +40,9 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.4.2-debug.apk` — **149,795 bytes**
+- **APK:** `dist/Scribe-0.4.3-debug.apk` — **151,607 bytes**
 - **SHA-256:**
-  `a82e780f1a04ba15eac6abe354714f137c03585fa981960fc2a8cdc7ea37cc61`
+  `0513b56fac6060914d59c1b95f2ea095ad176e3702c1eada3c2c458361805b75`
 - Android lint: **0 errors** (26 warnings, mostly hardcoded localization strings
   and the required adaptive-icon folder).
 - APK integrity, manifest components and signature were checked with
@@ -50,13 +56,14 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
   in 0.4.0, and the 0.4.1 SAF test merged three `.md(...).txt` shards into one
   ordered `.md` and appended a second commit to the same file. The 0.4.2 launch
   test confirms a configured launch contains only the blank handoff View and
-  does not inflate the setup form.
+  does not inflate the setup form. The 0.4.3 server-error handling was checked
+  against the live endpoint and the host build.
 - Debug-signed only. A later build from another machine/runner can use a
   different debug key; switching builds may require uninstalling first.
 
 ## Install
 
-1. Copy `Scribe-0.4.2-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.4.3-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -177,6 +184,25 @@ Connect timeout 15 s, read timeout 180 s. Optional
 active at a time; phrases are sent in order. No model/language field is required
 by the existing FastAPI endpoint.
 
+## Troubleshooting a transcription error
+
+- **`end of input at character 0 of`** means the app received a successful
+  HTTP response with an empty body. It is not a JSON parsing bug and usually
+  not the bearer token. The URL or a proxy is answering before the transcription
+  service.
+- Use the **full path**, for example
+  `https://host/v1/audio/transcriptions`, not just `https://host`. A bare host
+  URL is retried once at that path by 0.4.3, but the direct path is clearer.
+- If the domain is behind **Cloudflare**, a WAF/Bot Fight rule can return
+  `HTTP 200` with `content-length: 0` for POSTs. Allow POST for the
+  transcription path, or use the server’s LAN URL
+  (`http://192.168.x.x:port/v1/audio/transcriptions`) to bypass Cloudflare.
+- **`Server HTTP 401/403`** is an authentication/proxy rejection. Paste only the
+  key; an accidental `Bearer ` prefix is stripped by 0.4.3. If a token was
+  shared in a chat or screenshot, rotate it on the server.
+- **`Server returned HTTP 200 but not JSON`** shows the first part of the body;
+  an HTML challenge page means the proxy, not the app, returned the response.
+
 ## Privacy and retention
 
 - The draft and pending WAVs are private app files until you commit or clear
@@ -229,6 +255,20 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`.
 The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
 writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
 artifact.
+
+## Changes in 0.4.3
+
+- Empty 2xx responses now produce an actionable proxy/URL error instead of the
+  raw `JSONException: end of input at character 0` message.
+- Non-2xx empty responses say “(empty response)”; non-JSON 2xx responses include
+  a short body excerpt.
+- Bearer tokens are trimmed and an accidentally pasted `Authorization:` or
+  `Bearer ` prefix is removed before sending.
+- A bare host URL is retried once at `/v1/audio/transcriptions` when the first
+  POST returns an empty 2xx.
+- Added `Accept: application/json` and an explicit Scribe User-Agent.
+- Updated the setup hints to say “API key / bearer token” and “Paste the key
+  only”; the contract text now says to use the full path, not the home page.
 
 ## Changes in 0.4.2
 
