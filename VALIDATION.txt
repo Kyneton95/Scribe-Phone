@@ -1,4 +1,4 @@
-VALIDATION - Scribe floating dictation 0.5.0
+VALIDATION - Scribe floating dictation 0.5.1
 Date: 2026-10-28 (Australia/Melbourne)
 
 Environment
@@ -11,91 +11,76 @@ Environment
   targetSdk    35
   Package      au.local.barkpocket
   Label        Scribe
-  Version      0.5.0-floating (versionCode 9)
+  Version      0.5.1-floating (versionCode 10)
   Runtime      sherpa-onnx 2.0.1, arm64-v8a only
 
 PASS: ./gradlew :app:assembleDebug BUILD SUCCESSFUL.
 PASS: ./gradlew :app:lintDebug 0 errors, 43 warnings.
       Warnings are hardcoded UI strings, unused resources, vector length,
       obsolete v26 folder, SDK checks and touch-accessibility suggestions.
-      No permission, manifest, native-library, ABI or API-level errors.
 PASS: APK produced at app/build/outputs/apk/debug/app-debug.apk
-      (37,140,319 bytes).
+      (18,376,755 bytes; native libs compressed and extracted at install,
+      so installed size is roughly 37 MB).
 PASS: apksigner verify: APK Signature Scheme v2 valid; debug certificate
       SHA-256 6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0.
-PASS: aapt2 badging: versionCode 9, versionName 0.5.0-floating.
-PASS: native libs packaged only for arm64-v8a:
-      libonnxruntime.so, libsherpa-onnx-c-api.so,
-      libsherpa-onnx-cxx-api.so, libsherpa-onnx-jni.so.
-PASS: ModelsActivity is present and exported=false.
-PASS: **no model weights are bundled**. `unzip -l app-debug.apk` finds no
-      .onnx, .tar.bz2, tokens.txt or test_wavs entries.
-PASS: APK carries the sherpa-onnx 2.0.1 AAR (classes + arm64 native libs),
-      Kotlin stdlib, and Apache Commons Compress/IO/Codec.
+PASS: aapt2 badging: versionCode 10, versionName 0.5.1-floating.
+PASS: manifest:
+      - android:extractNativeLibs="true"
+      - android:largeHeap="true"
+      - ModelsActivity present, exported=false
+      - arm64-v8a only, no model weights.
+PASS: native libs packaged: libonnxruntime.so, libsherpa-onnx-c-api.so,
+      libsherpa-onnx-cxx-api.so, libsherpa-onnx-jni.so (compressed in APK,
+      extracted by Android at install).
+PASS: no model weights in the APK (`unzip -l` finds no .onnx/.tar.bz2/
+      tokens.txt/test_wavs).
 
-ON-DEVICE MODEL SUPPORT
-  Catalog:
-    - Whisper Tiny English: 113 MB archive, required int8 encoder/decoder +
-      tokens, MIT.
-    - Moonshine Tiny English: 103 MB archive, preprocessor/encoder/uncached/
-      cached decode + tokens, MIT.
-    - Parakeet TDT 0.6B v2 int8: 482,468,385-byte archive, encoder/decoder/
-      joiner + tokens, CC-BY-4.0.
-  Downloads use Android DownloadManager and app-specific external storage;
-  installs are extracted into app-private files/models/<id>; Delete removes the
-  model and archive. The APK has no model weights.
+LOCAL-MODEL CRASH HARDENING IN 0.5.1
+  - LocalAsr now wraps config building, model loading and decoding in
+    catch (Throwable), logs under the ScribeLocal tag, releases the stream, and
+    converts the failure to an IOException shown in the card.
+  - The upload worker catches Throwable instead of Exception and logs under
+    ScribeBubble, so a Java/Kotlin Error no longer kills the worker silently.
+  - android:extractNativeLibs="true" ensures the arm64 libraries are unpacked
+    into the install library directory rather than loaded directly from the
+    APK; android:largeHeap="true" gives the Java heap more headroom.
+  - If a native SIGSEGV/SIGABRT still occurs, the process will still die; the
+    logcat crash buffer is required to identify the failing model/native call.
+  - Model files and installed state are unchanged; updating from 0.5.0 keeps
+    downloaded models.
 
-PASS: Host inference tests using the sherpa-onnx 2.0.1 JVM binding and Linux
-      x64 native libraries:
-      - Whisper Tiny English, test_wavs/0.wav:
-        "After early nightfall, the yellow lamps would light up here and there
-         the squalid quarter of the brothels."
-      - Moonshine Tiny English, test_wavs/0.wav:
-        same sentence, correct.
-      - Parakeet TDT 0.6B v2 int8, test_wavs/0.wav:
-        "Well, I don't wish to see it any more, observed Phebe, turning away
-         her eyes. It is certainly very like the old portrait."
-      This validates the model files, configs and expected text. It does not
-      execute the Android arm64 JNI binary.
-
-PASS: Host extraction/install tests (Robolectric, temporary harness):
-      - All three archives installed and passed required-file checks.
-      - Installed sizes observed: Moonshine 124,793,446 bytes; Parakeet
-        661,428,477 bytes. Whisper was reduced by skipping float32 ONNX files
-        and test_wavs; required int8 files total ~103.6 MB.
-      - Delete removes the model directory and archive.
-PASS: ModelsActivity opens and renders the model list (Robolectric).
-PASS: MainActivity setup renders the new ENGINE card and On-device toggle
-      (Robolectric).
-PASS: GitHub Actions workflow run 40621283195 completed successfully on
-      2026-10-28 with build + lint, checksum and artifact upload.
-      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40621283195
-      CI artifact: 37,140,319 bytes, SHA-256
-      a4e1e234e930f41f6ccacfc9ae42dafcd1a2368afd93775e4c8e27d9ddc1485f
-      (built at commit 4928c8f; runner debug key differs from the local APK.)
-      The CI APK was also inspected: no .onnx/.tar.bz2/tokens.txt/test_wavs.
-
-PASS: Existing tests remain valid:
-      - 0.4.1 daily Markdown shard merge/append with a fake DocumentsProvider.
-      - 0.4.2 configured-launch blank handoff (no setup inflation).
-      - Transcript joining and HH:mm daily-note formatting.
-      - 0.4.0 panel construct/measure/add.
+PASS: Existing 0.5.0 validation remains applicable to model handling and
+      inference, since the model catalog, installer and LocalAsr model configs
+      were not changed in 0.5.1:
+      - Host inference with sherpa-onnx 2.0.1 JVM/Linux produced correct
+        transcripts from Whisper Tiny, Moonshine Tiny and Parakeet test WAVs.
+      - Host extraction installed all three archives and passed required-file
+        checks.
+      - ModelsActivity and the ENGINE setup card opened successfully.
+      - 0.4.1 daily Markdown SAF repair/append and 0.4.2 launch handoff tests.
+PASS: APK no-model inspection repeated on 0.5.1.
 
 Local hand-off APK
-  Path      dist/Scribe-0.5.0-debug.apk
-  Size      37,140,319 bytes
-  SHA-256   b9f94358f98f713efad53cf7f71b4a7eaac0376f214e99098e24255dd73b949d
+  Path      dist/Scribe-0.5.1-debug.apk
+  Size      18,376,755 bytes
+  SHA-256   0e5c57d1296cdfd82a9eca81fbb23bdfd34f5c623030788930bc6e6b5e010272
   Signature debug, v2 scheme
 
 NOT PERFORMED
   - Installation or launch on a physical phone or emulator (no device attached;
-    no /dev/kvm for an accelerated emulator).
-  - Android arm64 JNI inference on the S24; host JVM inference is not the same
-    binary.
-  - DownloadManager progress/notification behavior and a real 482 MB download.
-  - Actual on-device model install/performance/memory under One UI.
+    no /dev/kvm).
+  - Android arm64 JNI inference on the S24. **A device crash still needs a
+    logcat**, because the host JVM runtime is not the Android native binary.
+  - DownloadManager behavior and a real 482 MB download.
+  - Real on-device model performance/memory.
+  - GitHub Actions execution of the 0.5.1 workflow (first run after push).
   - Stable release signing.
 
-This is a compiled, linted, debug-signed prototype. The APK contains only the
-runtime; all model weights are downloaded on demand. Because the runtime is
-arm64-v8a only, this APK will not install on 32-bit or x86 devices.
+NEXT DEBUG STEP IF IT STILL CRASHES
+  adb logcat -c
+  # reproduce on-device inference
+  adb logcat -d -b crash
+  adb logcat -d | grep -E 'FATAL|signal|ScribeLocal|sherpa|onnx|AndroidRuntime'
+
+The crash buffer will show whether this is a Java/Kotlin failure (now caught and
+shown) or a native backtrace, and which model was selected.

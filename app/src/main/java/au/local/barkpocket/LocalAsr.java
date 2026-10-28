@@ -1,6 +1,7 @@
 package au.local.barkpocket;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.k2fsa.sherpa.onnx.FeatureConfig;
 import com.k2fsa.sherpa.onnx.OfflineModelConfig;
@@ -21,6 +22,7 @@ import java.util.Locale;
 
 /** Lazy sherpa-onnx runner for user-downloaded Whisper, Moonshine and Parakeet models. */
 final class LocalAsr {
+    private static final String TAG = "ScribeLocal";
     private static OfflineRecognizer recognizer;
     private static String recognizerId;
 
@@ -33,18 +35,26 @@ final class LocalAsr {
             throw new IOException("The on-device model is not installed. Open Scribe settings "
                     + "and download " + spec.name + ".");
         }
-        OfflineRecognizer engine = ensure(context, spec);
-        float[] samples = readWav(wav);
-        if (samples.length == 0) throw new IOException("The recorded phrase is empty.");
-        OfflineStream stream = engine.createStream();
         try {
-            stream.acceptWaveform(samples, 16000);
-            engine.decode(stream);
-            OfflineRecognizerResult result = engine.getResult(stream);
-            String text = result == null ? "" : result.getText();
-            return text == null ? "" : text.trim();
-        } finally {
-            stream.release();
+            OfflineRecognizer engine = ensure(context, spec);
+            float[] samples = readWav(wav);
+            if (samples.length == 0) throw new IOException("The recorded phrase is empty.");
+            OfflineStream stream = engine.createStream();
+            try {
+                Log.i(TAG, "decode " + spec.id + " samples=" + samples.length);
+                stream.acceptWaveform(samples, 16000);
+                engine.decode(stream);
+                OfflineRecognizerResult result = engine.getResult(stream);
+                String text = result == null ? "" : result.getText();
+                Log.i(TAG, "decoded " + spec.id + " chars=" + (text == null ? 0 : text.length()));
+                return text == null ? "" : text.trim();
+            } finally {
+                stream.release();
+            }
+        } catch (Throwable t) {
+            Log.e(TAG, "Local transcription failed for " + spec.id, t);
+            if (t instanceof IOException) throw (IOException) t;
+            throw new IOException("Local model " + spec.name + " failed: " + describe(t), t);
         }
     }
 
@@ -52,12 +62,15 @@ final class LocalAsr {
             throws Exception {
         if (recognizer != null && spec.id.equals(recognizerId)) return recognizer;
         releaseLocked();
-        OfflineRecognizerConfig config = buildConfig(context, spec);
         try {
+            Log.i(TAG, "load " + spec.id);
+            OfflineRecognizerConfig config = buildConfig(context, spec);
             recognizer = new OfflineRecognizer(context.getAssets(), config);
             recognizerId = spec.id;
+            Log.i(TAG, "loaded " + spec.id);
             return recognizer;
         } catch (Throwable t) {
+            Log.e(TAG, "Could not load " + spec.id, t);
             recognizer = null;
             recognizerId = null;
             throw new IOException("Could not load " + spec.name + ": " + describe(t), t);

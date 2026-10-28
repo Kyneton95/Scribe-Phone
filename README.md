@@ -6,12 +6,17 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - **Repository:** <https://github.com/Kyneton95/Scribe-Phone> (private)
 - **Build workflow:** <https://github.com/Kyneton95/Scribe-Phone/actions/workflows/build-apk.yml>
-- **Verified CI build:** <https://github.com/Kyneton95/Scribe-Phone/actions/runs/40621283195>
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
 > `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
+>
+> **0.5.1:** local-model crash diagnostics and packaging hardening. Native
+> libraries are now extracted at install (`extractNativeLibs=true`), the app
+> requests a large heap, and local inference catches/logs `Throwable` failures
+> instead of letting the upload thread die. If a native crash remains, please
+> send the crash log; see “On-device transcription”.
 >
 > **0.5.0:** optional on-device transcription. The APK ships only the
 > sherpa-onnx runtime; Whisper Tiny, Moonshine Tiny and Parakeet TDT are
@@ -47,9 +52,9 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.5.0-debug.apk` — **37,140,319 bytes**
+- **APK:** `dist/Scribe-0.5.1-debug.apk` — **18,376,755 bytes**
 - **SHA-256:**
-  `b9f94358f98f713efad53cf7f71b4a7eaac0376f214e99098e24255dd73b949d`
+  `0e5c57d1296cdfd82a9eca81fbb23bdfd34f5c623030788930bc6e6b5e010272`
 - Android lint: **0 errors** (43 warnings, mostly hardcoded localization strings
   and the required adaptive-icon folder).
 - APK integrity, manifest components and signature were checked with
@@ -71,7 +76,7 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 ## Install
 
-1. Copy `Scribe-0.5.0-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.5.1-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -143,6 +148,23 @@ reinstall the model.
   Parakeet CC-BY-4.0. Their licences remain with the model files.
 - There is no model checksum beyond the archive extraction and required-file
   verification; a failed install can be deleted and retried.
+
+### If the local model crashes
+
+0.5.1 catches Java/Kotlin failures and writes them to logcat with the tag
+`ScribeLocal`; the bubble should stay alive and show “Couldn’t transcribe”.
+A native crash still kills the process. To diagnose one:
+
+```bash
+adb logcat -c
+# reproduce: On-device → speak
+adb logcat -d -b crash
+adb logcat -d | grep -E 'FATAL|signal|ScribeLocal|sherpa|onnx|AndroidRuntime'
+```
+
+If you cannot use adb, switch **ENGINE → Server** to keep using Scribe and send
+the model name (Whisper/Moonshine/Parakeet), phone model, and whether it dies
+when tapping **Use** or on the first phrase.
 
 ## How the dictation flow works
 
@@ -310,6 +332,19 @@ Output: `app/build/outputs/apk/debug/app-debug.apk`.
 The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
 writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
 artifact.
+
+## Changes in 0.5.1
+
+- Added a `Throwable` catch around local model loading/inference and the upload
+  worker, with `ScribeLocal`/`ScribeBubble` logging and a user-visible failure
+  instead of a dead upload thread where Java/Kotlin errors are involved.
+- Added `android:largeHeap="true"` and
+  `android:extractNativeLibs="true"` to improve native library loading and
+  memory headroom on One UI.
+- APK shrank to ~18 MB because the native libraries are compressed and
+  extracted at install; installed size is still ~37 MB.
+- If a native crash persists, the logcat commands in the on-device section are
+  required to identify the model and failing native call.
 
 ## Changes in 0.5.0
 
