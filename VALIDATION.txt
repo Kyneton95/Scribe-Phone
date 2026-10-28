@@ -67,6 +67,14 @@ PASS: Host extraction/install tests (Robolectric, temporary harness):
 PASS: ModelsActivity opens and renders the model list (Robolectric).
 PASS: MainActivity setup renders the new ENGINE card and On-device toggle
       (Robolectric).
+PASS: GitHub Actions workflow run 40621283195 completed successfully on
+      2026-10-28 with build + lint, checksum and artifact upload.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40621283195
+      CI artifact: 37,140,319 bytes, SHA-256
+      a4e1e234e930f41f6ccacfc9ae42dafcd1a2368afd93775e4c8e27d9ddc1485f
+      (built at commit 4928c8f; runner debug key differs from the local APK.)
+      The CI APK was also inspected: no .onnx/.tar.bz2/tokens.txt/test_wavs.
+
 PASS: Existing tests remain valid:
       - 0.4.1 daily Markdown shard merge/append with a fake DocumentsProvider.
       - 0.4.2 configured-launch blank handoff (no setup inflation).
@@ -86,7 +94,6 @@ NOT PERFORMED
     binary.
   - DownloadManager progress/notification behavior and a real 482 MB download.
   - Actual on-device model install/performance/memory under One UI.
-  - GitHub Actions execution of the 0.5.0 workflow (first run after push).
   - Stable release signing.
 
 This is a compiled, linted, debug-signed prototype. The APK contains only the
