@@ -1,40 +1,30 @@
-VALIDATION - Scribe floating dictation 0.6.2
+VALIDATION - Scribe floating dictation 0.6.4
 Date: 2026-10-28 (Australia/Melbourne)
 
 Build
   JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK/build tools 35
   Package: au.local.scribephone; minSdk 34; targetSdk 35
-  Version: 0.6.2-floating (versionCode 14); ABI: arm64-v8a
-  clean :app:assembleDebug :app:lintDebug: successful; 0 errors, 43 warnings
-  Local APK: dist/Scribe-0.6.2-debug.apk
-  Size: 18,377,812 bytes
-  SHA-256: ce5843a6b92229ad70e0e30e87c1e93285f131eb706054a6b410cbe034ac1d4b
+  Version: 0.6.4-floating (versionCode 15); ABI: arm64-v8a
+  clean :app:assembleDebug :app:lintDebug: successful; 0 errors, 42 warnings
+  Local APK: dist/Scribe-0.6.4-debug.apk
+  Size: 18,542,580 bytes
+  SHA-256: f785469b3b45e34ab8afff173efca240a686a7120ec8e195b262dfcfc01a573b
   Debug certificate SHA-256:
     6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0
 
-UI refresh (0.6.0–0.6.2)
-  - Distinctive scribe-themed iconography: stationery-inspired Edit/Copy/Clear/Folder
-    icons and a clearer stop/mic pair; close/minimize restored to recognizable glyphs.
-    App uses a dedicated stationery mark alongside the launcher foreground.
-  - Concise copy throughout setup and the expanded card: shorter headers, tighter
-    status labels, "Save draft" distinction from "Add to today’s note", clearer
-    model-manager wording, and direct model-select/delete actions.
-  - Existing calm paper-and-graphite palette and colors retained; no deliberate
-    gradients; no functional changes beyond copy/icons.
-  - 0.6.2 places the same stationery mark on the floating bubble as on the setup
-    title/header (replacing the mic glyph on the orb).
+UI changes (0.6.0–0.6.4)
+  - Stationery-themed iconography: Edit/Copy/Clear/Folder icons, clearer stop/mic pair
+  - Concise copy throughout setup and expanded card
+  - Calm paper-and-graphite palette retained; no deliberate gradients
+  - 0.6.4: bubble shows scribe mark; header matches
 
 Physical-device verification
   Installed on Samsung SM-S926B (Galaxy S24+), Android 16. UI renders; panel,
-  settings, engine toggle, and model manager screens opened. Moonshine phrase
-  decoding verified on the prior build; this build does not change inference code.
-
-Retained checks from 0.5.x
-  APK contains sherpa-onnx arm64 runtime but no model weights. Daily Markdown
-  (## HH:mm), SAF append/repair, launch handoff, server paths remain unchanged.
+  settings, engine toggle, model manager screens open. Moonshine phrase decoding
+  verified on prior build.
 
 Local hand-off APK
-  Path      dist/Scribe-0.6.2-debug.apk
-  Size      18,377,812 bytes
-  SHA-256   ce5843a6b92229ad70e0e30e87c1e93285f131eb706054a6b410cbe034ac1d4b
+  Path      dist/Scribe-0.6.4-debug.apk
+  Size      18,542,580 bytes
+  SHA-256   f785469b3b45e34ab8afff173efca240a686a7120ec8e195b262dfcfc01a573b
   Signature debug, v2 scheme

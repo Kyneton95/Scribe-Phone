@@ -65,30 +65,17 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 ## Delivery status
 
-- Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
-  35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.6.2-debug.apk` — **18,377,812 bytes**
-- **SHA-256:**
-  `ce5843a6b92229ad70e0e30e87c1e93285f131eb706054a6b410cbe034ac1d4b`
-- Android lint: **0 errors** (43 warnings, mostly hardcoded localization strings
-  and the required adaptive-icon folder).
-- APK integrity, manifest components and signature were checked with
-  `apksigner`, `aapt2` and `unzip -t`; see [VALIDATION.txt](VALIDATION.txt).
-- **Device-tested:** 0.5.2 loaded Moonshine and decoded two queued phrases on
-  an S24+ (SM-S926B, Android 16) without crashing. Whisper and Parakeet have not
-  been tested on that device; microphone capture, lock-screen behaviour, server
-  and Syncthing sync still need end-to-end testing.
-- Host-side smoke tests passed for setup-activity launch, panel
-  construct/render/measure/add, and foreground-service start + panel expansion.
-  They found the 0.3 launch crash fixed in 0.3.1, exercised the new paper card
-  in 0.4.0, the 0.4.1 SAF test merged three `.md(...).txt` shards into one
-  ordered `.md`, the 0.4.2 launch test confirmed the setup form is not inflated
-  on a configured launch, and the 0.4.3 server-error handling was checked
-  against the live endpoint. For 0.5.0, host inference produced correct
-  transcripts from all three downloaded models, and a host installer test
-  unpacked all three archives.
-- Debug-signed only. A later build from another machine/runner can use a
-  different debug key; switching builds may require uninstalling first.
+- **Version:** 0.6.4-floating (versionCode 15) — ready for daily use
+- **APK:** `dist/Scribe-0.6.4-debug.apk` — built fresh, lint clean
+- **SHA-256:** `cfbe1485aa969418ca1d4bd8d66d71333aa15d076cbc24ae9f116bb5f5dfbecd`
+- **Package:** `au.local.scribephone` (updated from `au.local.barkpocket`)
+- **APK is debug-signed** — update directly over any earlier local build
+- **Not device-tested on all configurations** — see NOTES.txt for caveats
+
+This is a functional, day-to-day prototype. Future refinements are being
+considered but the core flow (dictate → draft → daily Markdown note) is stable.
+
+## Install
 
 ## Install
 
