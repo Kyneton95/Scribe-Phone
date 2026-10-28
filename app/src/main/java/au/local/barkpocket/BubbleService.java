@@ -247,12 +247,12 @@ public class BubbleService extends Service {
         bubble = new BubbleView(this);
         bubble.setListener(new BubbleView.Listener() {
             @Override public void onTap() {
-                if (panelOpen) hidePanel(); else showPanel();
+                if (bubble != null) Ui.haptic(bubble);
+                toggleRecording();
             }
 
             @Override public void onLongPress() {
-                if (bubble != null) Ui.haptic(bubble);
-                toggleRecording();
+                if (panelOpen) hidePanel(); else showPanel();
             }
 
             @Override public void onDragStart() {

@@ -55,7 +55,7 @@ final class BubbleView extends View {
             phase = (float) a.getAnimatedValue();
             invalidate();
         });
-        setContentDescription("Scribe. Tap to open, hold to dictate.");
+        setContentDescription("Scribe. Tap to start/stop, hold to open panel.");
     }
 
     void setListener(Listener listener) {
