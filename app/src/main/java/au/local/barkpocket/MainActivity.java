@@ -454,10 +454,10 @@ public class MainActivity extends Activity {
 
         FrameLayout mark = new FrameLayout(this);
         mark.setBackground(shapeCircle(Ui.rounded(Ui.PENCIL, 23, this)));
-        ImageView sparkle = new ImageView(this);
-        sparkle.setImageResource(R.drawable.ic_sparkle);
-        sparkle.setColorFilter(Ui.INK);
-        mark.addView(sparkle, new FrameLayout.LayoutParams(
+        ImageView markIcon = new ImageView(this);
+        markIcon.setImageResource(R.drawable.ic_scribe_mark);
+        markIcon.setColorFilter(Ui.TERRACOTTA);
+        mark.addView(markIcon, new FrameLayout.LayoutParams(
                 Ui.dp(this, 24), Ui.dp(this, 24), Gravity.CENTER));
         brand.addView(mark, new LinearLayout.LayoutParams(Ui.dp(this, 46), Ui.dp(this, 46)));
 
