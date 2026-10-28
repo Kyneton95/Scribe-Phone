@@ -98,12 +98,12 @@ final class PanelView extends LinearLayout {
 
         FrameLayout avatar = new FrameLayout(context);
         avatar.setBackground(shapeCircle(Ui.rounded(Ui.PENCIL, 19, context)));
-        ImageView sparkle = new ImageView(context);
-        sparkle.setImageResource(R.drawable.ic_sparkle);
-        sparkle.setColorFilter(Ui.INK);
-        FrameLayout.LayoutParams sparkleLp = new FrameLayout.LayoutParams(
+        ImageView markIcon = new ImageView(context);
+        markIcon.setImageResource(R.drawable.ic_scribe_mark);
+        markIcon.setColorFilter(Ui.TERRACOTTA);
+        FrameLayout.LayoutParams markLp = new FrameLayout.LayoutParams(
                 Ui.dp(context, 19), Ui.dp(context, 19), Gravity.CENTER);
-        avatar.addView(sparkle, sparkleLp);
+        avatar.addView(markIcon, markLp);
         header.addView(avatar, new LayoutParams(Ui.dp(context, 38), Ui.dp(context, 38)));
 
         LinearLayout titleCol = new LinearLayout(context);

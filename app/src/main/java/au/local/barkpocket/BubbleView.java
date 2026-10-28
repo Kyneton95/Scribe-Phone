@@ -44,7 +44,7 @@ final class BubbleView extends View {
         setLayerType(LAYER_TYPE_SOFTWARE, null);
         setClickable(true);
         setFocusable(true);
-        mic = context.getDrawable(R.drawable.ic_scribe_mark);
+        mic = context.getDrawable(R.drawable.ic_mic);
         slop = Ui.touchSlop(context);
 
         pulse = ValueAnimator.ofFloat(0f, 1f);
