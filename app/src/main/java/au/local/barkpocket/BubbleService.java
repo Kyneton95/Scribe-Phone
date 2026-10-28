@@ -1052,11 +1052,11 @@ public class BubbleService extends Service {
                 failed = true;
                 listening = false;
                 store.error = describe(e);
-                store.status = "Couldn’t transcribe. Tap Retry.";
+                store.status = "Transcription failed. Open Scribe to retry.";
                 Log.e("ScribeBubble", "Transcription failed", e);
                 ui.post(() -> {
                     if (destroyed) return;
-                    showCaption("Couldn’t reach the server");
+                    showCaption("Transcription failed. Open Scribe to retry.");
                     refreshUi();
                     updateNotification();
                 });

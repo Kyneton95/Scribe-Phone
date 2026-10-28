@@ -56,7 +56,7 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 - Built successfully with **JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK
   35 and Build Tools 35.0.0** (pinned).
-- **APK:** `dist/Scribe-0.5.2-debug.apk` — **18,376,711 bytes**
+- **APK:** `dist/Scribe-0.6.0-debug.apk` — **18,377,772 bytes**
 - **SHA-256:**
   `5daf6ecdc96c04e241491f7bf715c9f0af2e44186c75c2d2ac7f4b0f638374d0`
 - Android lint: **0 errors** (43 warnings, mostly hardcoded localization strings

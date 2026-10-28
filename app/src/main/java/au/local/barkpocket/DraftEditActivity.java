@@ -89,11 +89,11 @@ public class DraftEditActivity extends Activity {
         TextView title = Ui.text(this, "Edit draft", 21, Ui.TEXT, false);
         title.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
         titles.addView(title);
-        titles.addView(Ui.text(this, "Changes stay local until you add them to today’s note",
+        titles.addView(Ui.text(this, "Save edits without changing today’s note",
                 11, Ui.MUTED, false));
 
         TextView save = new TextView(this);
-        save.setText("Save");
+        save.setText("Save draft");
         save.setTextSize(13.5f);
         save.setTextColor(Ui.PAPER);
         save.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
@@ -106,7 +106,7 @@ public class DraftEditActivity extends Activity {
         header.addView(save);
 
         TextView hint = Ui.text(this,
-                "Fix a word, add punctuation, or tighten a sentence. Empty the box to clear the draft.",
+                "Edit the text, or empty the box to clear the draft.",
                 12, Ui.MUTED, false);
         hint.setLineSpacing(Ui.dp(this, 3), 1.1f);
         LinearLayout.LayoutParams hintLp = new LinearLayout.LayoutParams(
@@ -135,7 +135,7 @@ public class DraftEditActivity extends Activity {
         body.addView(editor, editorLp);
 
         TextView footer = Ui.text(this,
-                "The daily note itself is only touched after you tap Add to today’s note.",
+                "Use Add to today’s note to add the saved draft.",
                 11, Ui.MUTED, false);
         footer.setGravity(Gravity.CENTER);
         footer.setLineSpacing(Ui.dp(this, 2), 1.1f);
@@ -153,7 +153,7 @@ public class DraftEditActivity extends Activity {
 
     private void save() {
         if (store.active || store.busy) {
-            android.widget.Toast.makeText(this, "Wait for the current phrase to finish first.",
+            android.widget.Toast.makeText(this, "Wait for the current phrase to finish.",
                     android.widget.Toast.LENGTH_SHORT).show();
             return;
         }

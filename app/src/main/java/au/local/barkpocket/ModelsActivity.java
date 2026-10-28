@@ -124,8 +124,8 @@ public class ModelsActivity extends Activity {
         header.addView(close);
 
         TextView intro = Ui.text(this,
-                "The APK contains only the inference runtime. Model weights are downloaded "
-                        + "separately and stored privately in the app. Wi-Fi is recommended; "
+                "The app includes the runtime, not model weights. Download models separately; "
+                        + "they’re stored privately in the app. Wi-Fi is recommended; "
                         + "Parakeet is the largest download.",
                 12, Ui.MUTED, false);
         intro.setLineSpacing(Ui.dp(this, 3), 1.1f);
@@ -148,10 +148,9 @@ public class ModelsActivity extends Activity {
         }
 
         TextView note = Ui.text(this,
-                "Whisper and Moonshine are English-only here. Parakeet is English-only too. "
-                        + "Model downloads come from the sherpa-onnx GitHub releases; their "
-                        + "licences are MIT and CC-BY-4.0. A download can continue while this "
-                        + "screen is closed.",
+                "All models are English-only. Downloads come from sherpa-onnx GitHub releases "
+                        + "and use MIT or CC-BY-4.0 licences. Downloads can continue when "
+                        + "this screen is closed.",
                 10.5f, Ui.MUTED, false);
         note.setLineSpacing(Ui.dp(this, 2), 1.08f);
         LinearLayout.LayoutParams noteLp = new LinearLayout.LayoutParams(
@@ -180,7 +179,7 @@ public class ModelsActivity extends Activity {
                 && LocalModels.installed(this, spec);
 
         if (row.busy) {
-            row.status.setText("Installing model… This can take a minute.");
+            row.status.setText("Installing model… This may take a minute.");
             row.progress.setVisibility(View.VISIBLE);
             row.progress.setIndeterminate(true);
             row.action.setText("Installing…");
@@ -301,7 +300,7 @@ public class ModelsActivity extends Activity {
     private void confirmDelete(Row row) {
         new AlertDialog.Builder(this)
                 .setTitle("Delete " + row.spec.name + "?")
-                .setMessage("The downloaded model will be removed from Scribe. You can download it again later.")
+                .setMessage("This removes the model from Scribe. You can download it again.")
                 .setNegativeButton("Cancel", null)
                 .setPositiveButton("Delete", (dialog, which) -> {
                     ModelDownloader.cancel(this, row.spec);

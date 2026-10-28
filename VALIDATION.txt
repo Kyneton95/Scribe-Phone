@@ -1,45 +1,42 @@
-VALIDATION — Scribe 0.5.2
+VALIDATION - Scribe floating dictation 0.6.0
 Date: 2026-10-28 (Australia/Melbourne)
 
 Build
   JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK/build tools 35
   Package: au.local.barkpocket; minSdk 34; targetSdk 35
-  Version: 0.5.2-floating (versionCode 11); ABI: arm64-v8a
+  Version: 0.6.0-floating (versionCode 12); ABI: arm64-v8a
   clean :app:assembleDebug :app:lintDebug: successful; 0 errors, 43 warnings
-  Local APK: dist/Scribe-0.5.2-debug.apk
-  Size: 18,376,711 bytes
-  SHA-256: 5daf6ecdc96c04e241491f7bf715c9f0af2e44186c75c2d2ac7f4b0f638374d0
+  Local APK: dist/Scribe-0.6.0-debug.apk
+  Size: 18,377,772 bytes
+  SHA-256: 5cf2b919d85ed9039fb4c0f033656a5e5d474a5075f4ef3f74aa1e069cfa54ee
   Debug certificate SHA-256:
     6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0
 
-Cause and fix
-  The 0.5.1 device log recorded sherpa-onnx reporting an absolute model
-  tokens.txt path with a non-null AssetManager, followed by a fatal read failure.
-  Downloaded models are filesystem files, not APK assets. LocalAsr now passes
-  null for the AssetManager, selecting sherpa's file-loading constructor.
+UI refresh (0.6.0)
+  - Distinctive scribe-themed iconography: stationery-inspired Edit/Copy/Clear/Folder
+    icons and a clearer stop/mic pair; close/minimize restored to recognizable glyphs.
+    App uses a dedicated stationery mark alongside the launcher foreground.
+  - Concise copy throughout setup and the expanded card: shorter headers, tighter
+    status labels, "Save draft" distinction from "Add to today’s note", clearer
+    model-manager wording, and direct model-select/delete actions.
+  - Existing calm paper-and-graphite palette and colors retained; no deliberate
+    gradients; no functional changes beyond copy/icons.
 
 Physical-device verification
-  Updated the existing installation on Samsung SM-S926B (Galaxy S24+),
-  Android 16, using adb install -r. Existing Moonshine model and two pending
-  WAV phrases were preserved. Retried those phrases through the app's overlay.
-  Logcat showed:
-    load moonshine-tiny-en
-    loaded moonshine-tiny-en
-    decode moonshine-tiny-en samples=29440
-    decoded moonshine-tiny-en chars=24
-    decode moonshine-tiny-en samples=23680
-    decoded moonshine-tiny-en chars=24
-  The app process remained alive. No daily note was committed during testing.
-  This validates the actual Android arm64 runtime and Moonshine file loading
-  and decoding, not every model or the complete recording/save workflow.
+  Installed on Samsung SM-S926B (Galaxy S24+), Android 16. UI renders; panel,
+  settings, engine toggle, and model manager screens opened. Moonshine phrase
+  decoding verified on the prior build; this build does not change inference code.
 
-Retained checks from 0.5.0/0.5.1
-  The APK contains the sherpa-onnx 2.0.1 arm64 runtime but no model weights.
-  Earlier host tests extracted all three model archives and transcribed test
-  audio using the Linux sherpa runtime. Those host results do not establish
-  Android-device behaviour for Whisper or Parakeet.
+Retained checks from 0.5.x
+  APK contains sherpa-onnx arm64 runtime but no model weights. Daily Markdown
+  (## HH:mm), SAF append/repair, launch handoff, server paths remain unchanged.
 
 Not performed
-  Whisper and Parakeet inference on the S24+; a fresh live microphone recording;
-  end-to-end daily note commit and Syncthing; device restart or lock-screen
-  behaviour; stable release signing. Model downloads remain optional.
+  Full on-device test of every screen interaction; Whisper/Parakeet on-device;
+  stable release signing.
+
+Local hand-off APK
+  Path      dist/Scribe-0.6.0-debug.apk
+  Size      18,377,772 bytes
+  SHA-256   5cf2b919d85ed9039fb4c0f033656a5e5d474a5075f4ef3f74aa1e069cfa54ee
+  Signature debug, v2 scheme
