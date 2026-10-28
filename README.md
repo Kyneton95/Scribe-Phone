@@ -165,23 +165,6 @@ reinstall the model.
 - There is no model checksum beyond the archive extraction and required-file
   verification; a failed install can be deleted and retried.
 
-### If the local model crashes
-
-0.5.1 catches Java/Kotlin failures and writes them to logcat with the tag
-`ScribeLocal`; the bubble should stay alive and show “Couldn’t transcribe”.
-A native crash still kills the process. To diagnose one:
-
-```bash
-adb logcat -c
-# reproduce: On-device → speak
-adb logcat -d -b crash
-adb logcat -d | grep -E 'FATAL|signal|ScribeLocal|sherpa|onnx|AndroidRuntime'
-```
-
-If you cannot use adb, switch **ENGINE → Server** to keep using Scribe and send
-the model name (Whisper/Moonshine/Parakeet), phone model, and whether it dies
-when tapping **Use** or on the first phrase.
-
 ## How the dictation flow works
 
 - Only voice dictation and commit remain; there are no modes to choose.
@@ -309,45 +292,6 @@ by the existing FastAPI endpoint.
 - Android cloud backup and device-to-device transfer are disabled for Scribe’s
   private data via `allowBackup="false"` and `dataExtractionRules`.
 - Scribe never writes to the daily file until you press Add to today’s note.
-
-## Limits and things to test
-
-- The overlay is a special-access feature; some OEM builds aggressively remove
-  or restrict bubbles. Check Scribe’s battery setting on One UI without
-  disabling all phone power management.
-- The pause threshold (default 4 s) uses a fixed RMS gate (`0.012`); quiet
-  speech may be missed and noise may trigger it. The 30 s cap can still cut a
-  word. Tap Stop to send immediately, or edit the draft if the server inserts
-  punctuation at an awkward point.
-- Speech shorter than 200 ms is ignored as noise. Do not use this as an
-  archival meeting recorder without checking the transcript against the audio.
-- One draft at a time; maximum 120 queued phrases; maximum one-hour session.
-- A force-stop/process kill can lose the current in-memory phrase (up to 30 s).
-  Committed WAV phrases and the private draft survive for Retry.
-- Recovery and failed uploads require tapping Retry in the card; the microphone
-  is never restarted silently.
-- The notes folder must stay writable and its persisted permission intact.
-- The card cannot host an IME, so **Edit** opens a small full-screen editor.
-- Test airplane mode, server failure, permission denial, screen off, rotation,
-  calls, app restart, folder permission loss, overlay revocation, lock screen
-  and Syncthing sync on the actual S24.
-
-## Build
-
-Requirements: JDK 17, Android SDK platform 35 and Build Tools 35.0.0. The Gradle
-8.9 wrapper is committed.
-
-```bash
-export ANDROID_HOME="$HOME/Android/Sdk"   # or create local.properties with sdk.dir
-./gradlew :app:assembleDebug :app:lintDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-Output: `app/build/outputs/apk/debug/app-debug.apk`.
-
-The GitHub Actions workflow installs SDK 35, builds the debug APK, runs lint,
-writes a SHA-256 checksum and uploads both as the `Scribe-debug-apk`
-artifact.
 
 ## Changes in 0.5.2
 
