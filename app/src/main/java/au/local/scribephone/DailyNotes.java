@@ -1,4 +1,4 @@
-package au.local.barkpocket;
+package au.local.scribephone;
 
 import android.content.ContentResolver;
 import android.content.Context;

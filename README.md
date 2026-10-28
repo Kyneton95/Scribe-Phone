@@ -9,7 +9,7 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 - **Release:** <https://github.com/Kyneton95/Scribe-Phone/releases>
 
 > The visible app is now called **Scribe**. The package remains
-> `au.local.barkpocket` so a 0.3.x build can update a 0.2/0.3 install. The old
+> `au.local.scribephone` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
 >
 > **0.6.2:** scribe/pen mark on the floating bubble to match the setup title

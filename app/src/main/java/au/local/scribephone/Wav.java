@@ -1,4 +1,4 @@
-package au.local.barkpocket;
+package au.local.scribephone;
 import java.io.*;
 final class Wav {
     static void write(File file, byte[] pcm) throws IOException {

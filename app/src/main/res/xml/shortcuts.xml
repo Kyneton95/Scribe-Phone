@@ -7,8 +7,8 @@
         android:icon="@drawable/ic_sparkle">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="au.local.barkpocket"
-            android:targetClass="au.local.barkpocket.MainActivity" />
+            android:targetPackage="au.local.scribephone"
+            android:targetClass="au.local.scribephone.MainActivity" />
     </shortcut>
     <shortcut
         android:shortcutId="settings"
@@ -17,10 +17,10 @@
         android:icon="@drawable/ic_settings">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="au.local.barkpocket"
-            android:targetClass="au.local.barkpocket.MainActivity">
+            android:targetPackage="au.local.scribephone"
+            android:targetClass="au.local.scribephone.MainActivity">
             <extra
-                android:name="au.local.barkpocket.EXTRA_SETTINGS"
+                android:name="au.local.scribephone.EXTRA_SETTINGS"
                 android:value="true" />
         </intent>
     </shortcut>

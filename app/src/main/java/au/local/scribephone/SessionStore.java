@@ -1,4 +1,4 @@
-package au.local.barkpocket;
+package au.local.scribephone;
 
 import android.annotation.SuppressLint;
 import android.content.Context;

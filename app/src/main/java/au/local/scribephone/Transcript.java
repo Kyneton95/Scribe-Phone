@@ -1,4 +1,4 @@
-package au.local.barkpocket;
+package au.local.scribephone;
 
 import java.util.Arrays;
 import java.util.HashSet;

@@ -1,4 +1,4 @@
-package au.local.barkpocket;
+package au.local.scribephone;
 
 import android.Manifest;
 import android.app.Activity;
@@ -32,7 +32,7 @@ import java.net.URI;
  * immediately summons the floating bubble and gets out of the way.
  */
 public class MainActivity extends Activity {
-    static final String EXTRA_SETTINGS = "au.local.barkpocket.EXTRA_SETTINGS";
+    static final String EXTRA_SETTINGS = "au.local.scribephone.EXTRA_SETTINGS";
 
     private static final int REQ_FOLDER = 22;
     private static final int REQ_PERMISSIONS = 23;

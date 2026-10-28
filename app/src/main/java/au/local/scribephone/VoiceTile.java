@@ -1,4 +1,4 @@
-package au.local.barkpocket;
+package au.local.scribephone;
 
 import android.app.PendingIntent;
 import android.content.Intent;

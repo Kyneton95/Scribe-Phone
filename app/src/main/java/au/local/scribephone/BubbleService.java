@@ -1,4 +1,4 @@
-package au.local.barkpocket;
+package au.local.scribephone;
 
 import android.Manifest;
 import android.animation.ValueAnimator;
@@ -55,14 +55,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Android 14, so the service stays in the foreground for its lifetime.
  */
 public class BubbleService extends Service {
-    static final String ACTION_SHOW = "au.local.barkpocket.SHOW";
-    static final String ACTION_SHOW_PANEL = "au.local.barkpocket.SHOW_PANEL";
-    static final String ACTION_HIDE = "au.local.barkpocket.HIDE";
-    static final String ACTION_TOGGLE = "au.local.barkpocket.TOGGLE";
-    static final String ACTION_STOP = "au.local.barkpocket.STOP";
-    static final String ACTION_COMMIT = "au.local.barkpocket.COMMIT";
-    static final String ACTION_CLEAR = "au.local.barkpocket.CLEAR";
-    static final String ACTION_RETRY = "au.local.barkpocket.RETRY";
+    static final String ACTION_SHOW = "au.local.scribephone.SHOW";
+    static final String ACTION_SHOW_PANEL = "au.local.scribephone.SHOW_PANEL";
+    static final String ACTION_HIDE = "au.local.scribephone.HIDE";
+    static final String ACTION_TOGGLE = "au.local.scribephone.TOGGLE";
+    static final String ACTION_STOP = "au.local.scribephone.STOP";
+    static final String ACTION_COMMIT = "au.local.scribephone.COMMIT";
+    static final String ACTION_CLEAR = "au.local.scribephone.CLEAR";
+    static final String ACTION_RETRY = "au.local.scribephone.RETRY";
 
     private static final String PREFS = "settings";
     private static final String PREF_X = "bubble_x";
