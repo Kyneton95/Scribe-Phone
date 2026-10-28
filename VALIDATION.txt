@@ -49,6 +49,14 @@ LOCAL-MODEL CRASH HARDENING IN 0.5.1
   - Model files and installed state are unchanged; updating from 0.5.0 keeps
     downloaded models.
 
+PASS: GitHub Actions workflow run 40623677269 completed successfully on
+      2026-10-28 with build + lint, checksum and artifact upload.
+      Run: https://github.com/Kyneton95/Scribe-Phone/actions/runs/40623677269
+      CI artifact: 18,376,755 bytes, SHA-256
+      81f26d91460437e1a7e9d6ec2950c1642433a4ed154515f4b4747599e4f23aec
+      (built at commit e887d21; runner debug key differs from the local APK).
+      CI APK inspected: no model weights.
+
 PASS: Existing 0.5.0 validation remains applicable to model handling and
       inference, since the model catalog, installer and LocalAsr model configs
       were not changed in 0.5.1:
@@ -73,7 +81,6 @@ NOT PERFORMED
     logcat**, because the host JVM runtime is not the Android native binary.
   - DownloadManager behavior and a real 482 MB download.
   - Real on-device model performance/memory.
-  - GitHub Actions execution of the 0.5.1 workflow (first run after push).
   - Stable release signing.
 
 NEXT DEBUG STEP IF IT STILL CRASHES
