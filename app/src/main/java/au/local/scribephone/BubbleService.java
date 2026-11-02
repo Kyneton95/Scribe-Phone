@@ -124,6 +124,9 @@ public class BubbleService extends Service {
     /** Last homeserver confirmation ("Added milk to the shopping list"), if any. */
     private String lastNotice = "";
     private int noticeGeneration;
+    /** Last answer to a planner question, kept so opening the card can show it. */
+    private String lastAnswer = "";
+    private int answerGeneration;
 
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
@@ -461,6 +464,10 @@ public class BubbleService extends Service {
         panelOpen = true;
         hideCaptionNow(false);
         refreshUi();
+        // An answer that arrived while the card was closed is still waiting.
+        if (panel != null && !lastAnswer.isEmpty()) {
+            panel.showAnswer(lastAnswer);
+        }
         ensureTicker();
     }
 
@@ -695,12 +702,15 @@ public class BubbleService extends Service {
      * Show what bark logged on the homeserver ("Added milk to the Shopping
      * list"). The notice is a separate channel from the draft: it never becomes
      * part of today's note. It appears in the card banner and in the ongoing
-     * notification for a few seconds, and only when "Server confirmations" is on.
+     * notification for a few seconds, and only when "Server responses" is on.
      */
     private void announceNotice(String notice) {
         String text = notice == null ? "" : notice.trim();
         if (text.isEmpty() || !noticesEnabled()) return;
         lastNotice = text;
+        // A new write supersedes an answer that is still on screen.
+        lastAnswer = "";
+        if (panel != null) panel.clearAnswer();
         int generation = ++noticeGeneration;
         if (panelOpen && panel != null) {
             try {
@@ -720,6 +730,36 @@ public class BubbleService extends Service {
 
     private boolean noticesEnabled() {
         return prefs().getBoolean("notices", true);
+    }
+
+    /**
+     * Show the answer to a planner question ("You need to buy milk").
+     *
+     * Unlike a one-line confirmation, an answer can be a sentence or two, so the
+     * card keeps it in a selectable block. The caption and notification carry a
+     * shortened copy and clear themselves; the card block stays until the next
+     * recording or question.
+     */
+    private void announceAnswer(String answer) {
+        String text = answer == null ? "" : answer.trim();
+        if (text.isEmpty() || !noticesEnabled()) return;
+        lastAnswer = text;
+        lastNotice = "";
+        int generation = ++answerGeneration;
+        if (panelOpen && panel != null) {
+            try {
+                panel.showAnswer(text);
+                android.widget.Toast.makeText(this, text,
+                        android.widget.Toast.LENGTH_LONG).show();
+            } catch (Exception ignored) {
+            }
+        }
+        updateNotification();
+        ui.postDelayed(() -> {
+            if (destroyed || generation != answerGeneration) return;
+            lastAnswer = "";
+            updateNotification();
+        }, 15000);
     }
 
     private int clampX(int x) {
@@ -759,6 +799,8 @@ public class BubbleService extends Service {
         commitWhenIdle = false;
         store.error = "";
         store.status = "Listening…";
+        lastAnswer = "";
+        if (panel != null) panel.clearAnswer();
         listening = true;
         listeningStarted = SystemClock.elapsedRealtime();
         store.active = true;
@@ -1078,9 +1120,15 @@ public class BubbleService extends Service {
                     store.accept(pending[0], result.text);
                     String snippet = Ui.shorten(result.text, 90);
                     String notice = result.notice;
+                    String answer = result.answer;
                     ui.post(() -> {
                         if (destroyed) return;
-                        if (!notice.isEmpty() && noticesEnabled()) {
+                        if (!answer.isEmpty() && noticesEnabled()) {
+                            // A planner question was answered; the transcript
+                            // stays in the draft, the answer is feedback.
+                            showCaption(Ui.shorten(answer, 180));
+                            announceAnswer(answer);
+                        } else if (!notice.isEmpty() && noticesEnabled()) {
                             // The confirmation is the useful caption; the
                             // transcript is already in the draft above.
                             showCaption(notice);
@@ -1134,7 +1182,7 @@ public class BubbleService extends Service {
     private UploadResult upload(File audio) throws Exception {
         if (LocalModels.isLocal(this)) {
             store.status = "Transcribing on device…";
-            return new UploadResult(LocalAsr.transcribe(this, audio), "");
+            return new UploadResult(LocalAsr.transcribe(this, audio), "", "");
         }
         String endpoint = store.endpoint();
         if (endpoint == null || endpoint.trim().isEmpty()) {
@@ -1227,10 +1275,12 @@ public class BubbleService extends Service {
                 throw new IOException("Server response has no text field.");
             }
             // Bark also sends a `notice` when it wrote something through Yuvomi,
-            // e.g. "Added milk to the shopping list". It is optional: a server
-            // that only returns {"text": ...} keeps working exactly as before.
+            // e.g. "Added milk to the shopping list", and an `answer` when the
+            // recording was a planner question. Both are optional: a server that
+            // only returns {"text": ...} keeps working exactly as before.
             String notice = json.isNull("notice") ? "" : json.optString("notice", "");
-            return new UploadResult(json.getString("text"), notice.trim());
+            String answer = json.isNull("answer") ? "" : json.optString("answer", "");
+            return new UploadResult(json.getString("text"), notice.trim(), answer.trim());
         } finally {
             connection.disconnect();
         }
@@ -1270,10 +1320,12 @@ public class BubbleService extends Service {
     private static final class UploadResult {
         final String text;
         final String notice;
+        final String answer;
 
-        UploadResult(String text, String notice) {
+        UploadResult(String text, String notice, String answer) {
             this.text = text == null ? "" : text;
             this.notice = notice == null ? "" : notice;
+            this.answer = answer == null ? "" : answer;
         }
     }
 
@@ -1341,8 +1393,9 @@ public class BubbleService extends Service {
     private String notificationText() {
         if (listening) return "Listening — tap to open the bubble";
         if (store.busy) return "Transcribing…";
-        // A fresh homeserver confirmation outranks the idle draft message; it is
-        // cleared by a timer in announceNotice.
+        // A fresh answer or confirmation outranks the idle draft message; both
+        // are cleared by timers in announceAnswer/announceNotice.
+        if (!lastAnswer.isEmpty()) return "Answer: " + Ui.shorten(lastAnswer, 160);
         if (!lastNotice.isEmpty()) return lastNotice;
         if (store.pendingCount() > 0) {
             int n = store.pendingCount();

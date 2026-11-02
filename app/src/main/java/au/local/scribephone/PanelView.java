@@ -40,6 +40,7 @@ final class PanelView extends LinearLayout {
     private final TextView subtitle;
     private final TextView intro;
     private final TextView draftView;
+    private final TextView answerText;
     private final TextView statusText;
     private final TextView retry;
     private final TextView errorText;
@@ -193,6 +194,18 @@ final class PanelView extends LinearLayout {
         draftLp.topMargin = Ui.dp(context, 10);
         draftView.setVisibility(GONE);
         chat.addView(draftView, draftLp);
+
+        answerText = Ui.text(context, "", 13, Ui.TEXT, false);
+        answerText.setTextIsSelectable(true);
+        answerText.setPadding(Ui.dp(context, 13), Ui.dp(context, 11),
+                Ui.dp(context, 13), Ui.dp(context, 11));
+        answerText.setBackground(Ui.outline(Ui.SURFACE_ALT, 0x332E2B27, 16, context));
+        answerText.setLineSpacing(Ui.dp(context, 3), 1.08f);
+        answerText.setVisibility(GONE);
+        LayoutParams answerLp = new LayoutParams(LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT);
+        answerLp.topMargin = Ui.dp(context, 10);
+        chat.addView(answerText, answerLp);
 
         LinearLayout statusRow = new LinearLayout(context);
         statusRow.setOrientation(HORIZONTAL);
@@ -431,6 +444,25 @@ final class PanelView extends LinearLayout {
         noticeText.animate().alpha(1f).translationY(0f).setDuration(200).start();
         handler.removeCallbacks(hideNotice);
         handler.postDelayed(hideNotice, 6500);
+    }
+
+    /**
+     * Show an answer to a planner question. It stays until {@link #clearAnswer()}
+     * so a two-sentence answer can be read without racing a timer.
+     */
+    void showAnswer(String answer) {
+        if (answer == null || answer.trim().isEmpty()) return;
+        answerText.setText("Answer: " + answer.trim());
+        answerText.setVisibility(VISIBLE);
+        answerText.setAlpha(0f);
+        answerText.setTranslationY(Ui.dp(context, 6));
+        answerText.animate().alpha(1f).translationY(0f).setDuration(200).start();
+        scroll.post(() -> scroll.fullScroll(View.FOCUS_DOWN));
+    }
+
+    void clearAnswer() {
+        answerText.setText("");
+        answerText.setVisibility(GONE);
     }
 
     void setClearConfirm(boolean show) {

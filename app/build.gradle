@@ -7,8 +7,8 @@ android {
         applicationId 'au.local.scribephone'
         minSdk 34
         targetSdk 35
-        versionCode 16
-        versionName '0.6.6-floating'
+        versionCode 17
+        versionName '0.6.7-floating'
         ndk { abiFilters 'arm64-v8a' }
     }
     compileOptions {

@@ -390,9 +390,9 @@ public class MainActivity extends Activity {
         noticesWords.setOrientation(LinearLayout.VERTICAL);
         noticesRow.addView(noticesWords, new LinearLayout.LayoutParams(
                 0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
-        noticesWords.addView(Ui.text(this, "Server confirmations", 13, Ui.TEXT, true));
+        noticesWords.addView(Ui.text(this, "Server responses", 13, Ui.TEXT, true));
         TextView noticesHint = Ui.text(this,
-                "Show what was logged, e.g. “Added milk to the shopping list”",
+                "Show confirmations and answers from the server",
                 10.5f, Ui.MUTED, false);
         noticesHint.setLineSpacing(Ui.dp(this, 2), 1.08f);
         noticesWords.addView(noticesHint);

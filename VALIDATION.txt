@@ -1,49 +1,63 @@
-VALIDATION - Scribe floating dictation 0.6.6
+VALIDATION - Scribe floating dictation 0.6.7
 Date: 2026-11-02 (Australia/Melbourne)
 
 Build
   JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK/build tools 35
   Package: au.local.scribephone; minSdk 34; targetSdk 35
-  Version: 0.6.6-floating (versionCode 16); ABI: arm64-v8a
+  Version: 0.6.7-floating (versionCode 17); ABI: arm64-v8a
   :app:assembleDebug :app:lintDebug: successful; 0 errors, 42 warnings
-  Local APK: dist/Scribe-0.6.6-debug.apk
-  Size: 18,551,416 bytes
-  SHA-256: 764dcf9bf27e4f518c587249ed63ead13a095ec128db69a55b5997410275c8cb
+  Local APK: dist/Scribe-0.6.7-debug.apk
+  Size: 18,555,916 bytes
+  SHA-256: fb1386cb95cd1e5cb5956347004ec0be259e7b42227a302ef5543431748641f4
   Debug certificate SHA-256:
     6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0
 
-Changes (0.6.6)
-  - Reads an optional `notice` from the transcription reply and shows it as
-    the bubble caption, a card banner and a toast. The notice never enters the
-    draft or the daily note.
-  - New SERVER -> "Server confirmations" On/Off pill (stored as
-    `notices`, default on). Servers without `notice` behave exactly as before.
-  - The ongoing notification shows the confirmation for ~8 s when the card is
-    closed.
+Changes (0.6.7)
+  - Planner questions: a transcript such as "what do I need to buy?" is
+    answered from Yuvomi (shopping list, tasks, upcoming events). The answer is
+    kept in a selectable block in the card; the caption and notification show a
+    shortened copy. The transcript still goes into the draft.
+  - Reminders: "remind me to call the plumber tomorrow at 9" creates the task
+    and a Yuvomi reminder attached to it. A notice confirms the local time.
+  - SERVER setting renamed from "Server confirmations" to "Server responses";
+    it now covers both confirmations and answers.
+  - Parses the optional `answer` field alongside `notice`; servers that send
+    only {"text": ...} are unchanged.
 
 Server verification (bark, homeserver, 2026-11-02)
-  - bark rebuilt and restarted; /health reports CPU int8, model loaded.
-  - POST /v1/intent with execute=false: action proposed, no notice (correct).
-  - POST /v1/intent "Buy milk from the store." dry run: add_shopping_item.
-  - Real write test (disposable item, deleted afterwards):
-      notice = "Added scribe notice test zz9 to the shopping list"
-    at top level, on intent, and on the action.
-  - Wording checks inside the container:
-      add_shopping_item  -> "Added milk to the shopping list"
-      add_shopping_item  -> "Added bread to the Hardware list"
-      create_task        -> "Added task: Book the car service (due Fri 6 Nov)"
-      create_event       -> "Added event: Dentist (Tue 3 Nov at 15:00)"
-      all-day event      -> "Added event: Public holiday (Tue 3 Nov)"
-      list_tasks         -> no notice
-  - Yuvomi list checked after cleanup: only the original items remain.
+  - Deployed with HOUSEHOLD_TZ=Australia/Melbourne; container date now shows
+    AEDT instead of UTC. The prompt's "today" and weekday table follow the
+    household day, and remind_at is converted to the naive UTC Yuvomi stores.
+  - Questions, end to end (read tool loop, no writes):
+      "What do I need to buy?"  -> decision answer
+        "You need to buy: sausages, eggs, bread, a Christmas present for tea,
+         and milk."
+      "What tasks do I have?"   -> decision answer, "You don't have any tasks."
+      "What is on my calendar?" -> decision answer, doctor's appointment
+        Tuesday 3 November 09:00.
+  - Reminder, end to end:
+      "Remind me to call the plumber tomorrow at 9."
+      -> task id 3, due 2026-11-03 09:00
+      -> reminder entity_type=task, entity_id=3,
+         remind_at=2026-11-02T22:00:00 (09:00 AEDT next day)
+      -> notice "Reminder set: Call the plumber (Tue 3 Nov at 09:00)"
+      Test task and reminder deleted; GET /reminders/all and
+      /reminders/pending return [] and list_tasks is empty.
+  - Dry runs: create_reminder and add_shopping_item both report "dry run" with
+    no notice and no writes.
+  - Safety: "What do I need to buy?" does not write; a question gate downgrades
+    write proposals, and the action-cue gate is unchanged.
+  - Non-planner question "What time is it?" returns decision note with a
+    summary; it is not treated as a planner answer.
 
 Physical-device verification
-  Not re-run for 0.6.6 on the S24+; the app compiles and lints clean, and the
-  change is confined to HTTP response parsing plus three UI surfaces. Install
-  the APK over 0.6.5 to verify the caption/banner/toast on the phone.
+  Not re-run for 0.6.7 on the S24+; the app compiles and lints clean. The new
+  UI is an answer block in the existing card plus reuse of the 0.6.6 response
+  surfaces. Install over 0.6.6 to verify question answers and reminder notices
+  on the phone.
 
 Local hand-off APK
-  Path      dist/Scribe-0.6.6-debug.apk
-  Size      18,551,416 bytes
-  SHA-256   764dcf9bf27e4f518c587249ed63ead13a095ec128db69a55b5997410275c8cb
+  Path      dist/Scribe-0.6.7-debug.apk
+  Size      18,555,916 bytes
+  SHA-256   fb1386cb95cd1e5cb5956347004ec0be259e7b42227a302ef5543431748641f4
   Signature debug, v2 scheme

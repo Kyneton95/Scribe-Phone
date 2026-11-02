@@ -12,11 +12,16 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 > `au.local.scribephone` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
 >
+> **0.6.7:** ask questions and set reminders. “What do I need to buy?” is
+> answered from the planner and shown in the card, caption and notification;
+> “Remind me to call the plumber tomorrow at 9” creates the task and a Yuvomi
+> reminder. The toggle is now **Server → Server responses**.
+>
 > **0.6.6:** server confirmations. When the transcription server also logs the
 > phrase on the homeserver (a task, shopping item or event), Scribe shows the
 > returned `notice` — “Added milk to the shopping list” — as a caption, a card
 > banner and a toast. It is never added to the draft. On/off in
-> **Server → Server confirmations**.
+> **Server → Server responses**.
 >
 > **0.6.2:** scribe/pen mark on the floating bubble to match the setup title
 > mark — the orb now shows the same stationery icon instead of the mic glyph.
@@ -71,9 +76,9 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 ## Delivery status
 
-- **Version:** 0.6.6-floating (versionCode 16) — ready for daily use
-- **APK:** `dist/Scribe-0.6.6-debug.apk` — built fresh, lint clean (0 errors)
-- **SHA-256:** `764dcf9bf27e4f518c587249ed63ead13a095ec128db69a55b5997410275c8cb`
+- **Version:** 0.6.7-floating (versionCode 17) — ready for daily use
+- **APK:** `dist/Scribe-0.6.7-debug.apk` — built fresh, lint clean (0 errors)
+- **SHA-256:** `fb1386cb95cd1e5cb5956347004ec0be259e7b42227a302ef5543431748641f4`
 - **Package:** `au.local.scribephone` (updated from `au.local.barkpocket`)
 - **APK is debug-signed** — update directly over any earlier local build
 - **Not device-tested on all configurations** — see NOTES.txt for caveats
@@ -85,7 +90,7 @@ considered but the core flow (dictate → draft → daily Markdown note) is stab
 
 ## Install
 
-1. Copy `Scribe-0.6.6-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.6.7-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -169,6 +174,11 @@ reinstall the model.
   “and / but / so / because / then / which / that / or / also”, the previous
   full stop is replaced with a space or comma. Real sentence boundaries are
   kept.
+- In **Server** mode, a question about the planner (“what do I need to buy?”,
+  “what’s on tomorrow?”) is answered from Yuvomi and shown as a server
+  response; the transcript still goes into the draft. “Remind me to … at 9”
+  creates the task and a Yuvomi reminder. The on-device engine only
+  transcribes, so it does neither.
 - The draft is editable: use **Edit** in the card to fix names, punctuation or
   joins before committing.
 - **Add to today’s note** stops any recording, waits for the upload queue, then
@@ -177,11 +187,10 @@ reinstall the model.
 - **Clear** removes only the current draft and pending phrase audio; already
   written daily notes are untouched.
 
-## Server confirmations
+## Server responses
 
-Scribe can show what the server did with a phrase, not just its transcript. When
-the configured server logs the phrase on the homeserver — a shopping item, a
-task, a calendar event — it returns a human-readable `notice` next to `text`:
+Scribe can show what the server did with a phrase, or the answer to a planner
+question, not just the transcript. Bark returns one of two optional fields:
 
 ```json
 {
@@ -191,22 +200,38 @@ task, a calendar event — it returns a human-readable `notice` next to `text`:
 }
 ```
 
-Scribe displays that notice in three places and never mixes it into the draft:
+```json
+{
+  "text": "What do I need to buy?",
+  "answer": "You need to buy milk and a Christmas present for tea.",
+  "intent": {"decision": "answer", "executed": false, "...": "..."}
+}
+```
 
-- as the **caption** above the floating bubble while the card is closed;
-- as a short **banner** in the card and a **toast** while it is open;
-- in the **ongoing notification** for a few seconds, when the phone is face-down
-  or another app is in front.
+A **notice** is a one-line confirmation of something that was written (shopping
+item, task, event, reminder). An **answer** is a sentence or two about the
+family planner, produced by asking Yuvomi for the current tasks, shopping list
+or calendar first. Neither is invented by the phone.
+
+Scribe displays either as a server response and never mixes it into the draft:
+
+- an **answer** is kept in a selectable block in the card, so a two-sentence
+  reply can be read at leisure; the caption and notification get a shortened
+  copy and clear themselves;
+- a **notice** appears as a short banner in the card, a toast, and the caption
+  above the bubble;
+- both briefly replace the ongoing notification text, which helps when the phone
+  is face-down or another app is in front.
 
 If the server returns only `{"text": …}` — or uses the **On-device** engine,
-which has no server round-trip — the app behaves exactly as before. Turn the
-confirmation off in **Server → Server confirmations**; the setting is stored on
-the phone, so the same server can be used with it on or off.
+which has no server round-trip — the app behaves exactly as before. Turn this
+off in **Server → Server responses**; the setting is stored on the phone, so the
+same server can be used with it on or off.
 
 This is deliberately the *same request* as transcription rather than a second
-URL. A separate "log this" call would either duplicate the write or need a dry
-run that never produces the confirmation. The server is the only part that
-knows what was written, so it composes the sentence; Scribe just displays it.
+URL. The server already has the transcript and the planner; a separate call
+would either duplicate writes or need a dry run that cannot produce the
+confirmation.
 
 ## One file per day
 
@@ -279,9 +304,10 @@ Expected HTTP 2xx JSON:
 {"text": "The returned transcript."}
 ```
 
-An optional `notice` string may accompany it; when present and non-empty, Scribe
-shows it as the homeserver confirmation described above. A server that omits the
-field needs no changes.
+An optional `notice` string may accompany it (a one-line confirmation of what
+was written) and an optional `answer` string (a reply to a planner question).
+When either is present and non-empty, Scribe shows it as a server response as
+described above. A server that omits both fields needs no changes.
 
 Connect timeout 15 s, read timeout 180 s. Optional
 `Authorization: Bearer <token>`. Redirects are not followed. Only one upload is
