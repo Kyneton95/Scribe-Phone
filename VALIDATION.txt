@@ -1,30 +1,49 @@
-VALIDATION - Scribe floating dictation 0.6.4
-Date: 2026-10-28 (Australia/Melbourne)
+VALIDATION - Scribe floating dictation 0.6.6
+Date: 2026-11-02 (Australia/Melbourne)
 
 Build
   JDK 17.0.21, Gradle 8.9, AGP 8.7.3, Android SDK/build tools 35
   Package: au.local.scribephone; minSdk 34; targetSdk 35
-  Version: 0.6.4-floating (versionCode 15); ABI: arm64-v8a
-  clean :app:assembleDebug :app:lintDebug: successful; 0 errors, 42 warnings
-  Local APK: dist/Scribe-0.6.4-debug.apk
-  Size: 18,542,580 bytes
-  SHA-256: f785469b3b45e34ab8afff173efca240a686a7120ec8e195b262dfcfc01a573b
+  Version: 0.6.6-floating (versionCode 16); ABI: arm64-v8a
+  :app:assembleDebug :app:lintDebug: successful; 0 errors, 42 warnings
+  Local APK: dist/Scribe-0.6.6-debug.apk
+  Size: 18,551,416 bytes
+  SHA-256: 764dcf9bf27e4f518c587249ed63ead13a095ec128db69a55b5997410275c8cb
   Debug certificate SHA-256:
     6af184b106724ee0cf9d68b0b63775107c97a3ecde8b9d0ad77cdb0abd8ddeb0
 
-UI changes (0.6.0–0.6.4)
-  - Stationery-themed iconography: Edit/Copy/Clear/Folder icons, clearer stop/mic pair
-  - Concise copy throughout setup and expanded card
-  - Calm paper-and-graphite palette retained; no deliberate gradients
-  - 0.6.4: bubble shows scribe mark; header matches
+Changes (0.6.6)
+  - Reads an optional `notice` from the transcription reply and shows it as
+    the bubble caption, a card banner and a toast. The notice never enters the
+    draft or the daily note.
+  - New SERVER -> "Server confirmations" On/Off pill (stored as
+    `notices`, default on). Servers without `notice` behave exactly as before.
+  - The ongoing notification shows the confirmation for ~8 s when the card is
+    closed.
+
+Server verification (bark, homeserver, 2026-11-02)
+  - bark rebuilt and restarted; /health reports CPU int8, model loaded.
+  - POST /v1/intent with execute=false: action proposed, no notice (correct).
+  - POST /v1/intent "Buy milk from the store." dry run: add_shopping_item.
+  - Real write test (disposable item, deleted afterwards):
+      notice = "Added scribe notice test zz9 to the shopping list"
+    at top level, on intent, and on the action.
+  - Wording checks inside the container:
+      add_shopping_item  -> "Added milk to the shopping list"
+      add_shopping_item  -> "Added bread to the Hardware list"
+      create_task        -> "Added task: Book the car service (due Fri 6 Nov)"
+      create_event       -> "Added event: Dentist (Tue 3 Nov at 15:00)"
+      all-day event      -> "Added event: Public holiday (Tue 3 Nov)"
+      list_tasks         -> no notice
+  - Yuvomi list checked after cleanup: only the original items remain.
 
 Physical-device verification
-  Installed on Samsung SM-S926B (Galaxy S24+), Android 16. UI renders; panel,
-  settings, engine toggle, model manager screens open. Moonshine phrase decoding
-  verified on prior build.
+  Not re-run for 0.6.6 on the S24+; the app compiles and lints clean, and the
+  change is confined to HTTP response parsing plus three UI surfaces. Install
+  the APK over 0.6.5 to verify the caption/banner/toast on the phone.
 
 Local hand-off APK
-  Path      dist/Scribe-0.6.4-debug.apk
-  Size      18,542,580 bytes
-  SHA-256   f785469b3b45e34ab8afff173efca240a686a7120ec8e195b262dfcfc01a573b
+  Path      dist/Scribe-0.6.6-debug.apk
+  Size      18,551,416 bytes
+  SHA-256   764dcf9bf27e4f518c587249ed63ead13a095ec128db69a55b5997410275c8cb
   Signature debug, v2 scheme

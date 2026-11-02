@@ -49,6 +49,7 @@ public class MainActivity extends Activity {
     private TextView engineLocal;
     private TextView localButton;
     private TextView localModelLabel;
+    private TextView noticesPill;
     private TextView micStatus;
     private TextView bubbleStatus;
     private TextView folderStatus;
@@ -374,8 +375,45 @@ public class MainActivity extends Activity {
         tokenInputLp.topMargin = Ui.dp(this, 7);
         serverCard.addView(token, tokenInputLp);
 
+        // Confirmations ride along in the transcription reply as an optional
+        // `notice`, so this is one switch rather than a second URL: the same
+        // request that transcribed the phrase also says what was written.
+        LinearLayout noticesRow = new LinearLayout(this);
+        noticesRow.setOrientation(LinearLayout.HORIZONTAL);
+        noticesRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams noticesRowLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        noticesRowLp.topMargin = Ui.dp(this, 14);
+        serverCard.addView(noticesRow, noticesRowLp);
+
+        LinearLayout noticesWords = new LinearLayout(this);
+        noticesWords.setOrientation(LinearLayout.VERTICAL);
+        noticesRow.addView(noticesWords, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        noticesWords.addView(Ui.text(this, "Server confirmations", 13, Ui.TEXT, true));
+        TextView noticesHint = Ui.text(this,
+                "Show what was logged, e.g. “Added milk to the shopping list”",
+                10.5f, Ui.MUTED, false);
+        noticesHint.setLineSpacing(Ui.dp(this, 2), 1.08f);
+        noticesWords.addView(noticesHint);
+
+        noticesPill = enginePill("On");
+        noticesPill.setPadding(Ui.dp(this, 16), Ui.dp(this, 8),
+                Ui.dp(this, 16), Ui.dp(this, 8));
+        noticesPill.setOnClickListener(v -> {
+            boolean on = !prefs.getBoolean("notices", true);
+            prefs.edit().putBoolean("notices", on).apply();
+            Ui.haptic(v);
+            updateNoticesPill();
+        });
+        LinearLayout.LayoutParams noticesPillLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        noticesPillLp.leftMargin = Ui.dp(this, 10);
+        noticesRow.addView(noticesPill, noticesPillLp);
+        updateNoticesPill();
+
         TextView contract = Ui.text(this,
-                "Posts one phrase as multipart WAV and expects {\"text\":\"…\"}. Use the full path, not the server home page; the key is sent as Authorization: Bearer <key>.",
+                "Posts one phrase as multipart WAV and expects {\"text\":\"…\"}. It may also return a \"notice\" saying what was logged. Use the full path, not the server home page; the key is sent as Authorization: Bearer <key>.",
                 10.5f, Ui.MUTED, false);
         contract.setLineSpacing(Ui.dp(this, 2), 1.08f);
         LinearLayout.LayoutParams contractLp = new LinearLayout.LayoutParams(
@@ -666,6 +704,14 @@ public class MainActivity extends Activity {
     private void styleEnginePill(TextView pill, boolean selected) {
         pill.setTextColor(selected ? Ui.PAPER : Ui.INK);
         pill.setBackground(Ui.rounded(selected ? Ui.INK : Ui.SURFACE_ALT, 18, this));
+    }
+
+    private void updateNoticesPill() {
+        if (noticesPill == null) return;
+        boolean on = prefs.getBoolean("notices", true);
+        noticesPill.setText(on ? "On" : "Off");
+        noticesPill.setTextColor(on ? Ui.PAPER : Ui.INK);
+        noticesPill.setBackground(Ui.rounded(on ? Ui.INK : Ui.SURFACE_ALT, 18, this));
     }
 
     private void attemptStart() {

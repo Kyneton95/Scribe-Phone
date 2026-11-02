@@ -12,6 +12,12 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 > `au.local.scribephone` so a 0.3.x build can update a 0.2/0.3 install. The old
 > Dictate/Dictate + document modes and per-session text files are gone.
 >
+> **0.6.6:** server confirmations. When the transcription server also logs the
+> phrase on the homeserver (a task, shopping item or event), Scribe shows the
+> returned `notice` — “Added milk to the shopping list” — as a caption, a card
+> banner and a toast. It is never added to the draft. On/off in
+> **Server → Server confirmations**.
+>
 > **0.6.2:** scribe/pen mark on the floating bubble to match the setup title
 > mark — the orb now shows the same stationery icon instead of the mic glyph.
 >
@@ -65,9 +71,9 @@ think, then add the finished draft to **one note per day** in a Syncthing folder
 
 ## Delivery status
 
-- **Version:** 0.6.4-floating (versionCode 15) — ready for daily use
-- **APK:** `dist/Scribe-0.6.4-debug.apk` — built fresh, lint clean
-- **SHA-256:** `cfbe1485aa969418ca1d4bd8d66d71333aa15d076cbc24ae9f116bb5f5dfbecd`
+- **Version:** 0.6.6-floating (versionCode 16) — ready for daily use
+- **APK:** `dist/Scribe-0.6.6-debug.apk` — built fresh, lint clean (0 errors)
+- **SHA-256:** `764dcf9bf27e4f518c587249ed63ead13a095ec128db69a55b5997410275c8cb`
 - **Package:** `au.local.scribephone` (updated from `au.local.barkpocket`)
 - **APK is debug-signed** — update directly over any earlier local build
 - **Not device-tested on all configurations** — see NOTES.txt for caveats
@@ -79,7 +85,7 @@ considered but the core flow (dictate → draft → daily Markdown note) is stab
 
 ## Install
 
-1. Copy `Scribe-0.6.2-debug.apk` to the phone and open it.
+1. Copy `Scribe-0.6.6-debug.apk` to the phone and open it.
 2. Allow installation from your file manager if prompted.
 3. Open **Scribe** once and complete the short setup:
    - **Microphone** — used only while dictating.
@@ -171,6 +177,37 @@ reinstall the model.
 - **Clear** removes only the current draft and pending phrase audio; already
   written daily notes are untouched.
 
+## Server confirmations
+
+Scribe can show what the server did with a phrase, not just its transcript. When
+the configured server logs the phrase on the homeserver — a shopping item, a
+task, a calendar event — it returns a human-readable `notice` next to `text`:
+
+```json
+{
+  "text": "Buy milk from the store.",
+  "notice": "Added milk to the shopping list",
+  "intent": {"decision": "action", "executed": true, "...": "..."}
+}
+```
+
+Scribe displays that notice in three places and never mixes it into the draft:
+
+- as the **caption** above the floating bubble while the card is closed;
+- as a short **banner** in the card and a **toast** while it is open;
+- in the **ongoing notification** for a few seconds, when the phone is face-down
+  or another app is in front.
+
+If the server returns only `{"text": …}` — or uses the **On-device** engine,
+which has no server round-trip — the app behaves exactly as before. Turn the
+confirmation off in **Server → Server confirmations**; the setting is stored on
+the phone, so the same server can be used with it on or off.
+
+This is deliberately the *same request* as transcription rather than a second
+URL. A separate "log this" call would either duplicate the write or need a dry
+run that never produces the confirmation. The server is the only part that
+knows what was written, so it composes the sentence; Scribe just displays it.
+
 ## One file per day
 
 Committed text goes to:
@@ -241,6 +278,10 @@ Expected HTTP 2xx JSON:
 ```json
 {"text": "The returned transcript."}
 ```
+
+An optional `notice` string may accompany it; when present and non-empty, Scribe
+shows it as the homeserver confirmation described above. A server that omits the
+field needs no changes.
 
 Connect timeout 15 s, read timeout 180 s. Optional
 `Authorization: Bearer <token>`. Redirects are not followed. Only one upload is

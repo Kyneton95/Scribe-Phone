@@ -121,6 +121,9 @@ public class BubbleService extends Service {
     private volatile boolean commitWhenIdle;
     private long listeningStarted;
     private String lastNotificationKey = "";
+    /** Last homeserver confirmation ("Added milk to the shopping list"), if any. */
+    private String lastNotice = "";
+    private int noticeGeneration;
 
     private final Runnable ticker = new Runnable() {
         @Override public void run() {
@@ -686,6 +689,39 @@ public class BubbleService extends Service {
                 }).start();
     }
 
+    // ------------------------------------------------------- server notice
+
+    /**
+     * Show what bark logged on the homeserver ("Added milk to the Shopping
+     * list"). The notice is a separate channel from the draft: it never becomes
+     * part of today's note. It appears in the card banner and in the ongoing
+     * notification for a few seconds, and only when "Server confirmations" is on.
+     */
+    private void announceNotice(String notice) {
+        String text = notice == null ? "" : notice.trim();
+        if (text.isEmpty() || !noticesEnabled()) return;
+        lastNotice = text;
+        int generation = ++noticeGeneration;
+        if (panelOpen && panel != null) {
+            try {
+                panel.showNotice(text);
+                android.widget.Toast.makeText(this, text,
+                        android.widget.Toast.LENGTH_LONG).show();
+            } catch (Exception ignored) {
+            }
+        }
+        updateNotification();
+        ui.postDelayed(() -> {
+            if (destroyed || generation != noticeGeneration) return;
+            lastNotice = "";
+            updateNotification();
+        }, 8000);
+    }
+
+    private boolean noticesEnabled() {
+        return prefs().getBoolean("notices", true);
+    }
+
     private int clampX(int x) {
         return Math.max(Ui.dp(this, 8),
                 Math.min(x, Ui.screenWidth(this) - bubbleSize - Ui.dp(this, 8)));
@@ -1037,13 +1073,21 @@ public class BubbleService extends Service {
                     File[] pending = store.pending();
                     if (pending.length == 0) break;
                     store.status = pending.length == 1 ? "Transcribing…" : "Transcribing " + pending.length + "…";
-                    String text = upload(pending[0]);
+                    UploadResult result = upload(pending[0]);
                     if (destroyed) break;
-                    store.accept(pending[0], text);
-                    String snippet = Ui.shorten(text, 90);
+                    store.accept(pending[0], result.text);
+                    String snippet = Ui.shorten(result.text, 90);
+                    String notice = result.notice;
                     ui.post(() -> {
                         if (destroyed) return;
-                        showCaption(snippet.isEmpty() ? "Transcribed" : snippet);
+                        if (!notice.isEmpty() && noticesEnabled()) {
+                            // The confirmation is the useful caption; the
+                            // transcript is already in the draft above.
+                            showCaption(notice);
+                            announceNotice(notice);
+                        } else {
+                            showCaption(snippet.isEmpty() ? "Transcribed" : snippet);
+                        }
                         refreshUi();
                         updateNotification();
                     });
@@ -1087,10 +1131,10 @@ public class BubbleService extends Service {
         }, "scribe-upload").start();
     }
 
-    private String upload(File audio) throws Exception {
+    private UploadResult upload(File audio) throws Exception {
         if (LocalModels.isLocal(this)) {
             store.status = "Transcribing on device…";
-            return LocalAsr.transcribe(this, audio);
+            return new UploadResult(LocalAsr.transcribe(this, audio), "");
         }
         String endpoint = store.endpoint();
         if (endpoint == null || endpoint.trim().isEmpty()) {
@@ -1119,7 +1163,7 @@ public class BubbleService extends Service {
         }
     }
 
-    private String uploadOnce(URL url, String token, File audio) throws Exception {
+    private UploadResult uploadOnce(URL url, String token, File audio) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
         connection.setConnectTimeout(15000);
         connection.setReadTimeout(180000);
@@ -1182,7 +1226,11 @@ public class BubbleService extends Service {
             if (!json.has("text") || json.isNull("text")) {
                 throw new IOException("Server response has no text field.");
             }
-            return json.getString("text");
+            // Bark also sends a `notice` when it wrote something through Yuvomi,
+            // e.g. "Added milk to the shopping list". It is optional: a server
+            // that only returns {"text": ...} keeps working exactly as before.
+            String notice = json.isNull("notice") ? "" : json.optString("notice", "");
+            return new UploadResult(json.getString("text"), notice.trim());
         } finally {
             connection.disconnect();
         }
@@ -1217,6 +1265,16 @@ public class BubbleService extends Service {
                 + "Use the full transcription URL (for example https://host/v1/audio/transcriptions), "
                 + "or the server's LAN URL, and allow POST through Cloudflare/WAF. "
                 + "This is usually a proxy or wrong-URL issue, not the token.");
+    }
+
+    private static final class UploadResult {
+        final String text;
+        final String notice;
+
+        UploadResult(String text, String notice) {
+            this.text = text == null ? "" : text;
+            this.notice = notice == null ? "" : notice;
+        }
     }
 
     private static final class EmptyResponseException extends IOException {
@@ -1283,6 +1341,9 @@ public class BubbleService extends Service {
     private String notificationText() {
         if (listening) return "Listening — tap to open the bubble";
         if (store.busy) return "Transcribing…";
+        // A fresh homeserver confirmation outranks the idle draft message; it is
+        // cleared by a timer in announceNotice.
+        if (!lastNotice.isEmpty()) return lastNotice;
         if (store.pendingCount() > 0) {
             int n = store.pendingCount();
             return n + (n == 1 ? " phrase waiting — tap Retry" : " phrases waiting — tap Retry");

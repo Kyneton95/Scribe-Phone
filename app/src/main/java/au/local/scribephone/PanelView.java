@@ -44,6 +44,7 @@ final class PanelView extends LinearLayout {
     private final TextView retry;
     private final TextView errorText;
     private final TextView savedText;
+    private final TextView noticeText;
     private final TextView fileLabel;
     private final TextView commitBtn;
     private final TextView editBtn;
@@ -59,6 +60,7 @@ final class PanelView extends LinearLayout {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable hideSaved;
+    private final Runnable hideNotice;
     private final ValueAnimator recordPulse;
     private String lastDraft = "";
     private boolean listening;
@@ -215,6 +217,17 @@ final class PanelView extends LinearLayout {
         retry.setVisibility(GONE);
         retry.setOnClickListener(v -> listener.onRetry());
         statusRow.addView(retry);
+
+        noticeText = Ui.text(context, "", 12, Ui.TERRACOTTA, true);
+        noticeText.setPadding(Ui.dp(context, 10), Ui.dp(context, 8),
+                Ui.dp(context, 10), Ui.dp(context, 8));
+        noticeText.setBackground(Ui.rounded(Ui.alpha(Ui.TERRACOTTA, 26), 12, context));
+        noticeText.setVisibility(GONE);
+        hideNotice = () -> noticeText.setVisibility(GONE);
+        LayoutParams noticeLp = new LayoutParams(LayoutParams.MATCH_PARENT,
+                LayoutParams.WRAP_CONTENT);
+        noticeLp.topMargin = Ui.dp(context, 8);
+        chat.addView(noticeText, noticeLp);
 
         errorText = Ui.text(context, "", 12, Ui.DANGER, false);
         errorText.setPadding(Ui.dp(context, 10), Ui.dp(context, 8),
@@ -406,6 +419,18 @@ final class PanelView extends LinearLayout {
         savedText.animate().alpha(1f).translationY(0f).setDuration(220).start();
         handler.removeCallbacks(hideSaved);
         handler.postDelayed(hideSaved, 5200);
+    }
+
+    /** Show bark's confirmation ("Added milk to the shopping list") briefly. */
+    void showNotice(String notice) {
+        if (notice == null || notice.trim().isEmpty()) return;
+        noticeText.setText(notice.trim());
+        noticeText.setVisibility(VISIBLE);
+        noticeText.setAlpha(0f);
+        noticeText.setTranslationY(Ui.dp(context, 6));
+        noticeText.animate().alpha(1f).translationY(0f).setDuration(200).start();
+        handler.removeCallbacks(hideNotice);
+        handler.postDelayed(hideNotice, 6500);
     }
 
     void setClearConfirm(boolean show) {
